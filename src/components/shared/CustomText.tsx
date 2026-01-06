@@ -1,6 +1,6 @@
 import { View, Text , StyleSheet } from 'react-native'
 import React , {Children, FC} from 'react'
-import { Colors } from 'react-native/Libraries/NewAppScreen'
+
 import { RFValue } from 'react-native-responsive-fontsize'
 
 const fontSizes = {
@@ -34,7 +34,7 @@ const CustomText:FC<CustomTextProps> = ({
 
 const styles = StyleSheet.create({
     text: {
-        color: Colors.text,
+        color: '#000000',
         textAlign: 'left'
     }
 })

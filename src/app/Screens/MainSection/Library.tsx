@@ -20,13 +20,10 @@ interface LibraryProps {
 }
 
 interface Book {
-  id: string;
-  bookname: string;
-  authorname: string;
-  cover: any;
-  views?: number;
-  likes?: number;
-  addition_date?: string;
+  _id: string;
+  title: string;
+  filename: string;
+  uploadDate: string;
 }
 
 // Get screen width to calculate grid item size
@@ -48,30 +45,19 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
 
   useEffect(() => {
     if (allBooks.length > 0) {
-      // Sort books by addition date (descending order: newest first)
       const sortedByDate = [...allBooks].sort((a, b) => 
-        new Date(b.addition_date).getTime() - new Date(a.addition_date).getTime()
+        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
       );
   
-      // Get half of the books for oldest and newest
       const halfLength = Math.floor(allBooks.length / 2);
-      const newest = sortedByDate.slice(0, halfLength); // First half (newest)
-      const oldest = sortedByDate.slice(-halfLength).reverse(); // Last half (oldest)
-  
-      // Get top 10 books by views (descending order)
-      const mostViewedBooks = [...allBooks]
-        .sort((a, b) => b.views - a.views)
-        .slice(0, 10);
-  
-      // Get top 10 books by likes (descending order)
-      const mostLikedBooks = [...allBooks]
-        .sort((a, b) => b.likes - a.likes)
-        .slice(0, 10);
+      const newest = sortedByDate.slice(0, halfLength);
+      const oldest = sortedByDate.slice(-halfLength).reverse();
   
       setNewestBooks(newest);
       setOldestBooks(oldest);
-      setMostViewed(mostViewedBooks);
-      setMostLiked(mostLikedBooks);
+      setMostViewed(allBooks);
+      setMostLiked(allBooks);
+      setFilteredBooks(newest);
     }
   }, [allBooks]);
 
@@ -102,6 +88,7 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
   const renderItem = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
+      onPress={() => navigation.navigate('bookReader', { book: item })}
     >
       <Image
         source={require('../../../assets/images/icon.png')}
@@ -110,10 +97,10 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
         <CustomText
           variant="h6"
           fontFamily="Bold"
-          numberOfLines={1}
+          numberOfLines={2}
           style={styles.bookTitle}
         >
-          {item.bookname}
+          {item.title}
         </CustomText>
         <CustomText
           variant="h8"
@@ -121,7 +108,7 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
           numberOfLines={1}
           style={styles.bookAuthor}
         >
-          {item.authorname}
+          {new Date(item.uploadDate).toLocaleDateString()}
         </CustomText>
       </View>
     </TouchableOpacity>
@@ -219,7 +206,7 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
         <FlatList
           data={filteredBooks}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id}
           numColumns={COLUMN_COUNT}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.bookGrid}

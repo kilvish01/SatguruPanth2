@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Brahmgyanapp",
-    "slug": "brahmgyanapp",
+    "name": "Satguru Panth",
+    "slug": "satgurupanth",
     "platforms": [
       "ios",
       "android",
@@ -46,7 +46,9 @@
         }
       ],
       "expo-font",
-      "expo-video"
+      "expo-video",
+      "@react-native-community/datetimepicker",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

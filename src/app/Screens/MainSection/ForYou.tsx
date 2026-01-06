@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { GetNewReleasedBooks } from '@/components/API/BooksAPI';
+import { GetAllBooks } from '@/components/API/BooksAPI';
 import CustomText from '@/components/shared/CustomText';
 
 
@@ -35,13 +35,10 @@ interface Book1 {
 }
 
 interface Book {
-  id: string;
-  bookname: string;
-  authorname: string;
-  cover: any;
-  views?: number;
-  likes?: number;
-  addition_date?: string;
+  _id: string;
+  title: string;
+  filename: string;
+  uploadDate: string;
 }
 
 interface NewsItem {
@@ -65,92 +62,42 @@ const CARD_WIDTH = width * 0.42;
 
 const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [featuredBook, setFeaturedBook] = useState<ContinueReadingBook>({
-    id: '1',
-    title: 'Aatmbodh Mala',
-    author: 'Sant Dr. Gurmeet Ram Rahim Singh Ji Insan',
-    cover: require('@/assets/images/icon.png'),
-    progress: 30,
-    chapter: 'Chapter 4 of 5'
-  });
+  const [featuredBook, setFeaturedBook] = useState<ContinueReadingBook | null>(null);
 
-  const [recentBooks, setRecentBooks] = useState<Book1[]>([
-    {
-      id: '1',
-      title: 'Satsang Vishesh',
-      author: 'Sant Dr. Gurmeet Ram Rahim Singh Ji Insan',
-      cover: require('@/assets/images/icon.png'),
-      lastRead: '2 days ago'
-    },
-    {
-      id: '2',
-      title: 'Spiritual Knowledge',
-      author: 'Sant Dr. Gurmeet Ram Rahim Singh Ji Insan',
-      cover: require('@/assets/images/icon.png'),
-      lastRead: '5 days ago'
-    },
-    {
-      id: '3',
-      title: 'Truth of Life',
-      author: 'Sant Dr. Gurmeet Ram Rahim Singh Ji Insan',
-      cover: require('@/assets/images/icon.png'),
-      lastRead: 'Yesterday'
-    }
-  ]);
+  const [recentBooks, setRecentBooks] = useState<Book1[]>([]);
 
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [recommendedBooks, setRecommendedBooks] = useState<any[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchNewReleasedBooks = async () => {
-      try {
-        const newReleasedBooks = await GetNewReleasedBooks(); // Wait for the API response
-        setNewReleases(newReleasedBooks); // Set the data in state
-        console.log(newReleasedBooks);
-      } catch (error) {
-        console.error('Error fetching new releases for you class:', error);
-      }
-    };
-    fetchNewReleasedBooks();
-  }, []);
-
-  useEffect(() => {
-  if (allBooks.length > 0) {
-    const topBooks = allBooks
-      .filter((book) => book.likes > 200) // Filter books with likes > 200
-      .sort((a, b) => b.likes - a.likes) // Sort by likes (highest first)
-      .slice(0, 10); // Get top 10 books
-
-    setRecommendedBooks(topBooks);
-  }
-}, [allBooks]); // Runs whenever allBooks updates
-
-
-
-  const [latestNews, setLatestNews] = useState<NewsItem[]>([
-    {
-      id: '1',
-      title: 'New Meditation Technique Announced',
-      date: 'March 10, 2023',
-      image: require('@/assets/images/icon.png')
-    },
-    {
-      id: '2',
-      title: 'Upcoming Satsang Festival',
-      date: 'March 5, 2023',
-      image: require('@/assets/images/icon.png')
-    },
-    {
-      id: '3',
-      title: 'New Ashram Foundation Ceremony',
-      date: 'February 28, 2023',
-      image: require('@/assets/images/icon.png')
+    if (allBooks.length > 0) {
+      const sorted = [...allBooks].sort((a, b) => 
+        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+      );
+      setNewReleases(sorted.slice(0, 10));
+      setRecommendedBooks(sorted);
     }
-  ]);
+  }, [allBooks]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredBooks([]);
+    } else {
+      const filtered = allBooks.filter(book => 
+        book.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredBooks(filtered);
+    }
+  }, [searchQuery, allBooks]);
+
+
+
+  const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
   const renderItem = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
-      onPress={() => navigation.navigate('bookDetails', { book: item })}
+      onPress={() => navigation.navigate('bookReader', { book: item })}
     >
       <Image
         source={require('../../../assets/images/icon.png')}
@@ -159,10 +106,10 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
         <CustomText
           variant="h6"
           fontFamily="Bold"
-          numberOfLines={1}
+          numberOfLines={2}
           style={styles.bookTitle}
         >
-          {item.bookname}
+          {item.title}
         </CustomText>
         <CustomText
           variant="h8"
@@ -170,7 +117,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
           numberOfLines={1}
           style={styles.bookAuthor}
         >
-          {item.authorname}
+          {new Date(item.uploadDate).toLocaleDateString()}
         </CustomText>
       </View>
     </TouchableOpacity>
@@ -237,7 +184,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
           <View style={styles.greetingContainer}>
             <Text style={styles.namasteEmoji}>🙏</Text>
             <CustomText variant="h4" fontFamily="Bold" style={styles.headerTitle}>
-              नमस्ते
+              सतगुरु पंथ
             </CustomText>
           </View>
           <TouchableOpacity
@@ -268,13 +215,33 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Latest News Section (Small, at top) */}
+          {/* Search Results */}
+          {filteredBooks.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
+                Search Results
+              </CustomText>
+            </View>
+            <FlatList
+              data={filteredBooks}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderItem}
+              keyExtractor={item => item._id}
+              contentContainerStyle={styles.bookListContainer}
+            />
+          </View>
+          )}
+
+          {/* Latest News Section */}
+          {latestNews.length > 0 && (
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
                 Latest News
               </CustomText>
-              <TouchableOpacity onPress={() => navigation.navigate('allNews')}>
+              <TouchableOpacity>
                 <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
                   See All
                 </CustomText>
@@ -289,8 +256,10 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               contentContainerStyle={styles.newsListContainer}
             />
           </View>
+          )}
 
           {/* Continue Reading Section */}
+          {featuredBook && (
           <View style={styles.continueReadingContainer}>
             <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
               Continue Reading
@@ -323,14 +292,16 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               </View>
             </TouchableOpacity>
           </View>
+          )}
 
           {/* Recently Read Section */}
+          {recentBooks.length > 0 && (
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
                 Recently Read
               </CustomText>
-              <TouchableOpacity onPress={() => navigation.navigate('recentBooks')}>
+              <TouchableOpacity>
                 <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
                   See All
                 </CustomText>
@@ -345,14 +316,16 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
+          )}
 
           {/* Recommended Books Section */}
+          {recommendedBooks.length > 0 && (
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
                 Recommended for You
               </CustomText>
-              <TouchableOpacity onPress={() => navigation.navigate('recommendedBooks')}>
+              <TouchableOpacity onPress={() => navigation.navigate('allBooks', { books: recommendedBooks, title: 'Recommended Books' })}>
                 <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
                   See All
                 </CustomText>
@@ -363,18 +336,20 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item._id}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
+          )}
 
           {/* New Releases Section */}
+          {newReleases.length > 0 && (
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
                 New Releases
               </CustomText>
-              <TouchableOpacity onPress={() => navigation.navigate('newReleases')}>
+              <TouchableOpacity onPress={() => navigation.navigate('allBooks', { books: newReleases, title: 'New Releases' })}>
                 <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
                   See All
                 </CustomText>
@@ -385,10 +360,11 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item._id}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

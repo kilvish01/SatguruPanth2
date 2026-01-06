@@ -38,19 +38,24 @@ const TextBox: React.FC<TextBoxProps> = ({ IconTitle, IconName, title, placehold
       </View>
       <View style={styles.textArea}>
         <Text>{title}</Text>
-        <TextInput
-          style={{ borderBottomWidth: 1, borderBottomColor: '#6b6b6b' }}
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          editable={title !== 'Dob'}
+        <TouchableOpacity
           onPress={() => {
             if (title === 'Dob') {
-              showDatePicker(); // Open date picker for DOB
+              showDatePicker();
             }
           }}
-        />
+          disabled={title !== 'Dob'}
+        >
+          <TextInput
+            style={{ borderBottomWidth: 1, borderBottomColor: '#6b6b6b' }}
+            placeholder={placeholder}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            editable={title !== 'Dob'}
+            pointerEvents={title === 'Dob' ? 'none' : 'auto'}
+          />
+        </TouchableOpacity>
       </View>
       {title === 'Dob' && (
         <DateTimePickerModal

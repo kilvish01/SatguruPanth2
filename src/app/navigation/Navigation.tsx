@@ -6,6 +6,8 @@ import BottomTabs from '../Screens/BottomTabs';
 import AboutSatguruPanth from '../Screens/ProfileSection/AboutSatguruPanth';
 import ContactUs from '../Screens/ProfileSection/ContactUs';
 import EditProfile from '../Screens/ProfileSection/EditProfile';
+import BookReader from '../Screens/MainSection/BookReader';
+import AllBooks from '../Screens/MainSection/AllBooks';
 
 const Stack = createStackNavigator();
 
@@ -18,6 +20,8 @@ const Navigation = () => {
       <Stack.Screen name="editProfile" component={EditProfile}/>
       <Stack.Screen name="aboutSatguruPanth" component={AboutSatguruPanth}/>
       <Stack.Screen name="contactUs" component={ContactUs}/>
+      <Stack.Screen name="bookReader" component={BookReader}/>
+      <Stack.Screen name="allBooks" component={AllBooks}/>
     </Stack.Navigator>
   );
 };

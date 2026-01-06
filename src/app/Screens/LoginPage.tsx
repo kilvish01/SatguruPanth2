@@ -7,7 +7,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
-    StyleSheet,TouchableWithoutFeedback,Keyboard
+    StyleSheet,
+    ScrollView
 } from 'react-native';
 import CustomText from '@/components/shared/CustomText';
 import { commonStyles } from '@/styles/commonStyles';
@@ -25,22 +26,22 @@ const LoginPage = ({ navigation }: any) => {
 
     const handleGetStarted = () => {
         if (phoneNumber.length >= 10) {
-            // Navigate to bottom tabs directly
             loginHandler({phoneNumber,navigation});
-            navigation.replace('bottomTabs');
+            navigation.navigate('bottomTabs');
         } else {
-            // Show error that phone number is invalid
             alert('Please enter a valid phone number');
         }
     };
 
     return (
         <SafeAreaView style={commonStyles.container}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.keyboardAvoidingView}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.keyboardAvoidingView}
+            >
+                <ScrollView 
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.contentContainer}>
                         {/* Logo */}
@@ -51,64 +52,63 @@ const LoginPage = ({ navigation }: any) => {
                                 resizeMode="contain"
                             />
                             <CustomText variant="h4" fontFamily="Bold" style={styles.appTitle}>
-                                WELCOME TO BRAHMGYAN
+                            WELCOME TO SATGURU PANTH
                             </CustomText>
                         </View>
 
-                        <View >
-                            <View style={styles.welcomeContainer}>
-                                <CustomText variant="h6" fontFamily="Regular" style={styles.descriptionText}>
-                                    Enter your phone number to continue
-                                </CustomText>
-                            </View>
-
-                            {/* Phone Input */}
-                            <View style={styles.inputContainer}>
-                                <View style={styles.phoneInputContainer}>
-                                    <CustomText variant="h6" fontFamily="Medium" style={styles.countryCode}>
-                                        +91
-                                    </CustomText>
-                                    <TextInput
-                                        ref={inputRef}
-                                        style={styles.input}
-                                        placeholder="Phone Number"
-                                        keyboardType="phone-pad"
-                                        value={phoneNumber}
-                                        onChangeText={setPhoneNumber}
-                                        maxLength={10}
-                                        autoFocus={true}
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Get Started Button */}
-                            <TouchableOpacity
-                                style={[
-                                    styles.button,
-                                    phoneNumber.length >= 10 ? styles.buttonActive : styles.buttonInactive
-                                ]}
-                                onPress={handleGetStarted}
-                                disabled={phoneNumber.length < 10}
-                            >
-                                <CustomText variant="h6" fontFamily="Bold" style={styles.buttonText}>
-                                    Get Started
-                                </CustomText>
-                            </TouchableOpacity>
-
-                            {/* Terms and Conditions */}
-                            <CustomText variant="h8" fontFamily="Regular" style={styles.termsText}>
-                                By continuing, you agree to our{' '}
-                                <CustomText variant="h8" fontFamily="Medium" style={styles.termsLink}>
-                                    Terms of Service
-                                </CustomText> and{' '}
-                                <CustomText variant="h8" fontFamily="Medium" style={styles.termsLink}>
-                                    Privacy Policy
-                                </CustomText>
+                        {/* Welcome Text */}
+                        <View style={styles.welcomeContainer}>
+                            <CustomText variant="h6" fontFamily="Regular" style={styles.descriptionText}>
+                                Enter your phone number to continue
                             </CustomText>
                         </View>
+
+                        {/* Phone Input */}
+                        <View style={styles.inputContainer}>
+                            <View style={styles.phoneInputContainer}>
+                                <CustomText variant="h6" fontFamily="Medium" style={styles.countryCode}>
+                                    +91
+                                </CustomText>
+                                <TextInput
+                                    ref={inputRef}
+                                    style={styles.input}
+                                    placeholder="Phone Number"
+                                    keyboardType="phone-pad"
+                                    value={phoneNumber}
+                                    onChangeText={setPhoneNumber}
+                                    maxLength={10}
+                                    autoFocus={true}
+                                />
+                            </View>
+                        </View>
+
+                        {/* Get Started Button */}
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                phoneNumber.length >= 10 ? styles.buttonActive : styles.buttonInactive
+                            ]}
+                            onPress={handleGetStarted}
+                            disabled={phoneNumber.length < 10}
+                        >
+                            <CustomText variant="h6" fontFamily="Bold" style={styles.buttonText}>
+                                Get Started
+                            </CustomText>
+                        </TouchableOpacity>
+
+                        {/* Terms and Conditions */}
+                        <CustomText variant="h8" fontFamily="Regular" style={styles.termsText}>
+                            By continuing, you agree to our{' '}
+                            <CustomText variant="h8" fontFamily="Medium" style={styles.termsLink}>
+                                Terms of Service
+                            </CustomText> and{' '}
+                            <CustomText variant="h8" fontFamily="Medium" style={styles.termsLink}>
+                                Privacy Policy
+                            </CustomText>
+                        </CustomText>
                     </View>
-                </KeyboardAvoidingView>
-            </TouchableWithoutFeedback>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView >
     );
 };
@@ -116,6 +116,9 @@ const LoginPage = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     keyboardAvoidingView: {
         flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
     },
     contentContainer: {
         flex: 1,

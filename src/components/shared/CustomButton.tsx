@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity , StyleSheet, ActivityIndicator } from 'react-native'
 import React , {FC} from 'react'
-import { Colors } from 'react-native/Libraries/NewAppScreen'
+
 import CustomText from './CustomText'
 import { RFValue } from 'react-native-responsive-fontsize'
 
@@ -17,7 +17,7 @@ const CustomButton: FC<CustomButtonProps> = ({onPress , title , disabled , loadi
             ]}
         >
             {loading ?
-                <ActivityIndicator color={Colors.text} size='small'/> : 
+                <ActivityIndicator color='#ffffff' size='small'/> : 
                 <CustomText 
                     fontFamily='SemiBold' 
                     style={{

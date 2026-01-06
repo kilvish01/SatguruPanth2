@@ -6,3 +6,10 @@ interface CustomTextProps {
     fontFamily?: 'SemiBold' | 'Regular' | 'Bold' | 'Medium' | 'Light';
     numberOfLines?: number;
 }
+
+interface CustomButtonProps {
+    onPress: () => void;
+    title: string;
+    disabled?: boolean;
+    loading?: boolean;
+}
