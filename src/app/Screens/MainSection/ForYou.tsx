@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { GetAllBooks } from '@/components/API/BooksAPI';
+import { GetAllBooks, GetMostViewed, GetMostLiked } from '@/components/API/BooksAPI';
 import CustomText from '@/components/shared/CustomText';
 
 
@@ -68,12 +68,31 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
 
   const [newReleases, setNewReleases] = useState<any[]>([]);
   const [recommendedBooks, setRecommendedBooks] = useState<any[]>([]);
+  const [mostViewedBooks, setMostViewedBooks] = useState<any[]>([]);
+  const [mostLikedBooks, setMostLikedBooks] = useState<any[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadPopularBooks();
+  }, []);
+
+  const loadPopularBooks = async () => {
+    try {
+      const [viewed, liked] = await Promise.all([
+        GetMostViewed(10),
+        GetMostLiked(10)
+      ]);
+      setMostViewedBooks(viewed);
+      setMostLikedBooks(liked);
+    } catch (error) {
+      console.error('Error loading popular books:', error);
+    }
+  };
 
   useEffect(() => {
     if (allBooks.length > 0) {
       const sorted = [...allBooks].sort((a, b) => 
-        new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+        new Date(b.uploadDate || b.uploadedAt).getTime() - new Date(a.uploadDate || a.uploadedAt).getTime()
       );
       setNewReleases(sorted.slice(0, 10));
       setRecommendedBooks(sorted);
@@ -117,8 +136,18 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
           numberOfLines={1}
           style={styles.bookAuthor}
         >
-          {new Date(item.uploadDate).toLocaleDateString()}
+          {new Date(item.uploadDate || item.uploadedAt).toLocaleDateString()}
         </CustomText>
+        {item.viewCount !== undefined && (
+          <CustomText variant="h8" fontFamily="Regular" style={styles.bookStats}>
+            👁 {item.viewCount} views
+          </CustomText>
+        )}
+        {item.likeCount !== undefined && (
+          <CustomText variant="h8" fontFamily="Regular" style={styles.bookStats}>
+            ❤️ {item.likeCount} likes
+          </CustomText>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -336,7 +365,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id}
+              keyExtractor={item => item._id || item.BookID || item.bookId}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -360,7 +389,55 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id}
+              keyExtractor={item => item._id || item.BookID || item.bookId}
+              contentContainerStyle={styles.bookListContainer}
+            />
+          </View>
+          )}
+
+          {/* Most Viewed Section */}
+          {mostViewedBooks.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
+                Most Viewed
+              </CustomText>
+              <TouchableOpacity onPress={() => navigation.navigate('allBooks', { books: mostViewedBooks, title: 'Most Viewed' })}>
+                <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
+                  See All
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={mostViewedBooks}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderItem}
+              keyExtractor={item => item._id || item.BookID || item.bookId}
+              contentContainerStyle={styles.bookListContainer}
+            />
+          </View>
+          )}
+
+          {/* Most Liked Section */}
+          {mostLikedBooks.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <CustomText variant="h5" fontFamily="Bold" style={styles.sectionTitle}>
+                Most Liked
+              </CustomText>
+              <TouchableOpacity onPress={() => navigation.navigate('allBooks', { books: mostLikedBooks, title: 'Most Liked' })}>
+                <CustomText variant="h7" fontFamily="Medium" style={styles.viewAllText}>
+                  See All
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={mostLikedBooks}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderItem}
+              keyExtractor={item => item._id || item.BookID || item.bookId}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -482,6 +559,11 @@ const styles = StyleSheet.create({
   },
   bookAuthor: {
     color: '#666',
+  },
+  bookStats: {
+    color: '#888',
+    fontSize: 11,
+    marginTop: 2,
   },
   newsListContainer: {
     paddingLeft: 20,

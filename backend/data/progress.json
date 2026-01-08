@@ -19,5 +19,26 @@
     "currentPage": 5,
     "totalPages": 10,
     "lastRead": "2026-01-06T11:25:58.976Z"
+  },
+  {
+    "userId": "user123",
+    "bookId": "1767698385592",
+    "currentPage": 12,
+    "totalPages": 12,
+    "lastRead": "2026-01-06T14:10:58.321Z"
+  },
+  {
+    "userId": "user123",
+    "bookId": "1767697877285",
+    "currentPage": 11,
+    "totalPages": 49,
+    "lastRead": "2026-01-06T11:40:33.075Z"
+  },
+  {
+    "userId": "user123",
+    "bookId": "1767698373154",
+    "currentPage": 6,
+    "totalPages": 29,
+    "lastRead": "2026-01-06T14:11:24.790Z"
   }
 ]

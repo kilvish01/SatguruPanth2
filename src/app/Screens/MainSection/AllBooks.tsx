@@ -36,8 +36,13 @@ const AllBooks = ({ route, navigation }) => {
           numberOfLines={1}
           style={styles.bookDate}
         >
-          {new Date(item.uploadDate).toLocaleDateString()}
+          {new Date(item.uploadDate || item.uploadedAt).toLocaleDateString()}
         </CustomText>
+        {item.viewCount !== undefined && (
+          <CustomText variant="h8" style={styles.bookStats}>
+            👁 {item.viewCount} • ❤️ {item.likeCount || 0}
+          </CustomText>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -63,7 +68,7 @@ const AllBooks = ({ route, navigation }) => {
         <FlatList
           data={books}
           renderItem={renderBook}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => item._id || item.BookID || item.bookId}
           numColumns={COLUMN_COUNT}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.bookGrid}
@@ -128,6 +133,11 @@ const styles = StyleSheet.create({
   },
   bookDate: {
     color: '#666'
+  },
+  bookStats: {
+    color: '#888',
+    fontSize: 11,
+    marginTop: 4,
   }
 });
 

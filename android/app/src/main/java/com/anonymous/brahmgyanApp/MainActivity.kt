@@ -1,4 +1,4 @@
-package com.anonymous.brahmgyanApp
+package com.anonymous.brahmgyanapp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

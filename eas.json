@@ -2,15 +2,19 @@
     "build": {
       "development": {
         "android": {
-          "buildType": "apk"
+          "buildType": "apk",
+          "credentialsSource": "remote",
+          "autoIncrement": true
         },
+        "autoIncrement": true,
         "ios": {
           "simulator": true
         }
       },
       "production": {
         "android": {
-          "buildType": "app-bundle"
+          "buildType": "app-bundle",
+          "credentialsSource": "remote"
         },
         "ios": {
           "simulator": true
@@ -19,6 +23,9 @@
     },
     "submit": {
       "production": {}
+    },
+    "cli": {
+      "appVersionSource": "remote"
     }
   }
   

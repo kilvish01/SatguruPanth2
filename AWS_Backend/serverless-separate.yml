@@ -1,0 +1,74 @@
+service: book-reader-backend
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    AWS_REGION: us-east-1
+    S3_BUCKET: book-reader-pdfs
+    DYNAMO_TABLE: BooksMetadata
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+      Resource: "arn:aws:s3:::book-reader-pdfs/*"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata"
+
+functions:
+  getAllBooks:
+    handler: functions/getAllBooks.handler
+    events:
+      - http:
+          path: /api/books/all
+          method: get
+          cors: true
+
+  getBook:
+    handler: functions/getBook.handler
+    events:
+      - http:
+          path: /api/books/{bookId}
+          method: get
+          cors: true
+
+  uploadBook:
+    handler: functions/uploadBook.handler
+    events:
+      - http:
+          path: /api/books/upload
+          method: post
+          cors: true
+
+  likeBook:
+    handler: functions/likeBook.handler
+    events:
+      - http:
+          path: /api/books/{bookId}/like
+          method: post
+          cors: true
+
+  getMostViewed:
+    handler: functions/getMostViewed.handler
+    events:
+      - http:
+          path: /api/books/popular/viewed
+          method: get
+          cors: true
+
+  getMostLiked:
+    handler: functions/getMostLiked.handler
+    events:
+      - http:
+          path: /api/books/popular/liked
+          method: get
+          cors: true

@@ -1,4 +1,4 @@
-package com.anonymous.brahmgyanApp
+package com.anonymous.brahmgyanapp
 
 import android.app.Application
 import android.content.res.Configuration

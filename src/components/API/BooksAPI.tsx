@@ -1,18 +1,51 @@
-import axios from 'axios';
+import { bookAPI } from '../../services/bookService';
 
-const API_URL = 'http://10.232.58.83:3000/api';
+export const GetAllBooks = async (): Promise<any[]> => {
+  try {
+    const books = await bookAPI.getAllBooks();
+    return books;
+  } catch (error) {
+    console.error('Error fetching all books:', error);
+    return [];
+  }
+};
 
-export const GetAllBooks = async () : Promise<any[]> => {
-    try{
-        const response = await axios.get(`${API_URL}/books`, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            timeout: 10000,
-        })
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching all books:', error);
-        return [];
-    }
-}
+export const GetMostViewed = async (limit: number = 10): Promise<any[]> => {
+  try {
+    const books = await bookAPI.getMostViewed(limit);
+    return books;
+  } catch (error) {
+    console.error('Error fetching most viewed books:', error);
+    return [];
+  }
+};
+
+export const GetMostLiked = async (limit: number = 10): Promise<any[]> => {
+  try {
+    const books = await bookAPI.getMostLiked(limit);
+    return books;
+  } catch (error) {
+    console.error('Error fetching most liked books:', error);
+    return [];
+  }
+};
+
+export const GetBookById = async (bookId: string): Promise<any> => {
+  try {
+    const book = await bookAPI.getBook(bookId);
+    return book;
+  } catch (error) {
+    console.error('Error fetching book:', error);
+    return null;
+  }
+};
+
+export const LikeBook = async (bookId: string): Promise<boolean> => {
+  try {
+    await bookAPI.likeBook(bookId);
+    return true;
+  } catch (error) {
+    console.error('Error liking book:', error);
+    return false;
+  }
+};
