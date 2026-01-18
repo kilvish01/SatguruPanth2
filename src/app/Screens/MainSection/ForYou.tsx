@@ -211,7 +211,6 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.greetingContainer}>
-            <Text style={styles.namasteEmoji}>🙏</Text>
             <CustomText variant="h4" fontFamily="Bold" style={styles.headerTitle}>
               सतगुरु पंथ
             </CustomText>
@@ -257,7 +256,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id}
+              keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `search-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -281,7 +280,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderNewsItem}
-              keyExtractor={item => item.id}
+              keyExtractor={(item, index) => item.id || `news-${index}`}
               contentContainerStyle={styles.newsListContainer}
             />
           </View>
@@ -341,7 +340,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderBookItem}
-              keyExtractor={item => item.id}
+              keyExtractor={(item, index) => item.id || `recent-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -365,7 +364,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id || item.BookID || item.bookId}
+              keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `recommended-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -389,7 +388,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id || item.BookID || item.bookId}
+              keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `new-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -413,7 +412,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id || item.BookID || item.bookId}
+              keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `viewed-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -437,7 +436,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               renderItem={renderItem}
-              keyExtractor={item => item._id || item.BookID || item.bookId}
+              keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `liked-${index}`}
               contentContainerStyle={styles.bookListContainer}
             />
           </View>
@@ -451,7 +450,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
@@ -465,19 +464,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 18,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   greetingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  namasteEmoji: {
-    fontSize: 24,
-    marginRight: 10,
-  },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 26,
     color: '#000',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.08)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   profileButton: {
     width: 40,

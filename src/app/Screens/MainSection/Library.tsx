@@ -40,47 +40,54 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
   const [mostViewed , setMostViewed] = useState<Book[]>([]);
   const [mostLiked , setMostLiked]  = useState<Book[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
-  let currentStatus = 'newest';
+  const [currentStatus, setCurrentStatus] = useState('all');
 
 
   useEffect(() => {
     if (allBooks.length > 0) {
-      const sortedByDate = [...allBooks].sort((a, b) => 
+      const sortedByDate = [...allBooks].sort((a, b) =>
         new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
       );
-  
-      const halfLength = Math.floor(allBooks.length / 2);
-      const newest = sortedByDate.slice(0, halfLength);
-      const oldest = sortedByDate.slice(-halfLength).reverse();
-  
-      setNewestBooks(newest);
-      setOldestBooks(oldest);
-      setMostViewed(allBooks);
-      setMostLiked(allBooks);
-      setFilteredBooks(newest);
+
+      const sortedByOldest = [...allBooks].sort((a, b) =>
+        new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime()
+      );
+
+      const sortedByViews = [...allBooks].sort((a, b) =>
+        (b.viewCount || 0) - (a.viewCount || 0)
+      );
+
+      const sortedByLikes = [...allBooks].sort((a, b) =>
+        (b.likeCount || 0) - (a.likeCount || 0)
+      );
+
+      setNewestBooks(sortedByDate);
+      setOldestBooks(sortedByOldest);
+      setMostViewed(sortedByViews);
+      setMostLiked(sortedByLikes);
+      setFilteredBooks(allBooks); // Show all books by default
     }
   }, [allBooks]);
 
 
   // Apply sorting to books
   const handleContentChange = (tag: string) => {
-    
+    setCurrentStatus(tag);
     switch (tag) {
+      case 'all':
+        setFilteredBooks(allBooks);
+        break;
       case 'newest':
         setFilteredBooks(newestBooks);
-        currentStatus = 'newest';
         break;
       case 'oldest':
         setFilteredBooks(oldestBooks);
-        currentStatus = 'oldest';
         break;
       case 'mostViewed':
         setFilteredBooks(mostViewed);
-        currentStatus = 'mostViewed';
         break;
       case 'mostLiked':
         setFilteredBooks(mostLiked);
-        currentStatus = 'mostLiked';
         break;
     }
   };
@@ -128,6 +135,24 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
             Sort by:
           </CustomText>
           <View style={styles.sortOptions}>
+            <TouchableOpacity
+              style={[
+                styles.sortOption,
+                currentStatus === 'all' && styles.sortOptionActive,
+              ]}
+              onPress={() => handleContentChange('all')}
+            >
+              <CustomText
+                variant="h7"
+                fontFamily={currentStatus === 'all' ? 'Bold' : 'Medium'}
+                style={[
+                  styles.sortOptionText,
+                  currentStatus === 'all' && styles.sortOptionTextActive,
+                ]}
+              >
+                All Books
+              </CustomText>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.sortOption,
@@ -206,7 +231,7 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
         <FlatList
           data={filteredBooks}
           renderItem={renderItem}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `library-${index}`}
           numColumns={COLUMN_COUNT}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.bookGrid}

@@ -19,7 +19,7 @@ const SplashScreen = ({ navigation }: any) => {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   const tokenCheck = async () => {
-    navigation.navigate('loginPage');
+    navigation.navigate('bottomTabs');
   };
 
   useEffect(() => {

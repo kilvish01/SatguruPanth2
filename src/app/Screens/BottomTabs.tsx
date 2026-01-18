@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, SafeAreaView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { GetAllBooks } from '@/components/API/BooksAPI';
@@ -28,7 +29,7 @@ const SafeAreaWrapper = ({ children }: SafeAreaWrapperProps) => {
 
 
 const BottomTabs = ({navigation}:any) => {
-
+  const insets = useSafeAreaInsets();
   const [allBooks, setAllBooks] = useState<any[]>([]);
 
   useEffect(() => {
@@ -58,19 +59,20 @@ const BottomTabs = ({navigation}:any) => {
           shadowOffset: { width: 0, height: -2 },
           // Android specific elevation
           elevation: 5,
-          // Ensure proper padding and height
-          height: Platform.OS === 'ios' ? 90 : 60,
+          // Ensure proper padding and height with safe area insets
+          height: Platform.OS === 'ios' ? 90 : 60 + insets.bottom,
+          paddingBottom: insets.bottom,
           borderTopWidth: 1,
           borderTopColor: '#EEEEEE',
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          marginBottom: Platform.OS === 'ios' ? 8 : 0,
+          marginBottom: Platform.OS === 'ios' ? 8 : 5,
         },
         tabBarActiveTintColor: 'blue',
         tabBarInactiveTintColor: '#000',
         tabBarItemStyle: {
-          paddingTop: Platform.OS === 'ios' ? 10 : 0,
+          paddingTop: Platform.OS === 'ios' ? 10 : 5,
         },
       }}
     >

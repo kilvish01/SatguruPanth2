@@ -20,14 +20,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.brahmgyanapp"
+      "bundleIdentifier": "com.satgurupanth.satguruapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/images/icon.png",
         "backgroundColor": "#E3E0CF"
       },
-      "package": "com.anonymous.brahmgyanapp"
+      "package": "com.satgurupanth.satguruapp"
     },
     "web": {
       "bundler": "metro",
