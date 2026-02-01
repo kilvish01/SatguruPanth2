@@ -3,16 +3,17 @@ import { View, FlatList, TouchableOpacity, StyleSheet, Image, Dimensions, Platfo
 import { Ionicons } from '@expo/vector-icons';
 import CustomText from '../../../components/shared/CustomText';
 import { bookAPI } from '../../../services/bookService';
+import { Book } from '@/utils/types';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
 const GRID_SPACING = 16;
 const ITEM_WIDTH = (width - GRID_SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
-const AllBooks = ({ route, navigation }) => {
+const AllBooks = ({ route, navigation }: any) => {
   const { books, title } = route.params;
 
-  const renderBook = ({ item }) => (
+  const renderBook = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
       onPress={() => navigation.navigate('bookReader', { book: item })}
@@ -36,7 +37,7 @@ const AllBooks = ({ route, navigation }) => {
           numberOfLines={1}
           style={styles.bookDate}
         >
-          {new Date(item.uploadDate || item.uploadedAt).toLocaleDateString()}
+          {new Date(item.uploadDate || item.uploadedAt || '').toLocaleDateString()}
         </CustomText>
         {item.viewCount !== undefined && (
           <CustomText variant="h8" style={styles.bookStats}>
@@ -68,7 +69,7 @@ const AllBooks = ({ route, navigation }) => {
         <FlatList
           data={books}
           renderItem={renderBook}
-          keyExtractor={(item) => item._id || item.BookID || item.bookId}
+          keyExtractor={(item, index) => item._id || item.BookID || item.bookId || `book-${index}`}
           numColumns={COLUMN_COUNT}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.bookGrid}

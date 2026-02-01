@@ -36,9 +36,14 @@ interface Book1 {
 
 interface Book {
   _id: string;
+  BookID?: string;
+  bookId?: string;
   title: string;
   filename: string;
   uploadDate: string;
+  uploadedAt?: string;
+  viewCount?: number;
+  likeCount?: number;
 }
 
 interface NewsItem {
@@ -136,7 +141,7 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
           numberOfLines={1}
           style={styles.bookAuthor}
         >
-          {new Date(item.uploadDate || item.uploadedAt).toLocaleDateString()}
+          {new Date(item.uploadDate || item.uploadedAt || '').toLocaleDateString()}
         </CustomText>
         {item.viewCount !== undefined && (
           <CustomText variant="h8" fontFamily="Regular" style={styles.bookStats}>

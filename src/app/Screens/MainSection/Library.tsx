@@ -21,9 +21,14 @@ interface LibraryProps {
 
 interface Book {
   _id: string;
+  BookID?: string;
+  bookId?: string;
   title: string;
   filename: string;
   uploadDate: string;
+  uploadedAt?: string;
+  viewCount?: number;
+  likeCount?: number;
 }
 
 // Get screen width to calculate grid item size

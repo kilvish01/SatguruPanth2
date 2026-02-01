@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Platform, Linking, ScrollView } fro
 import { Ionicons } from '@expo/vector-icons';
 import CustomText from '@/components/shared/CustomText';
 
-const ContactUs = ({ navigation }) => {
+const ContactUs = ({ navigation }: any) => {
   const handleCall = () => {
     Linking.openURL('tel:9984257903');
   };

@@ -3,6 +3,7 @@ import React , {FC} from 'react'
 
 import CustomText from './CustomText'
 import { RFValue } from 'react-native-responsive-fontsize'
+import { CustomButtonProps } from '@/utils/types'
 
 const CustomButton: FC<CustomButtonProps> = ({onPress , title , disabled , loading}) => {
   return (

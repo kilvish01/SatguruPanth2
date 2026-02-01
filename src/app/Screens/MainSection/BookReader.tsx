@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomText from '../../../components/shared/CustomText';
 import { bookAPI } from '../../../services/bookService';
 
-const BookReader = ({ route, navigation }) => {
+const BookReader = ({ route, navigation }: any) => {
   const { book } = route.params;
   const [pdfUrl, setPdfUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -261,7 +261,7 @@ const BookReader = ({ route, navigation }) => {
     </html>
   `;
 
-  const onMessage = (event) => {
+  const onMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       setCurrentPage(data.page);

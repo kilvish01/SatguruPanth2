@@ -27,7 +27,13 @@
         "foregroundImage": "./src/assets/images/icon.png",
         "backgroundColor": "#E3E0CF"
       },
-      "package": "com.satgurupanth.satguruapp"
+      "package": "com.satgurupanth.satguruapp",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",

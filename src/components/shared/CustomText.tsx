@@ -2,6 +2,7 @@ import { View, Text , StyleSheet } from 'react-native'
 import React , {Children, FC} from 'react'
 
 import { RFValue } from 'react-native-responsive-fontsize'
+import { CustomTextProps } from '@/utils/types'
 
 const fontSizes = {
     h1: 24,

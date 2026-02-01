@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { bookAPI } from '../../../services/bookService';
 import CustomText from '../../../components/shared/CustomText';
+import { Book } from '@/utils/types';
 
-const BooksScreen = ({ navigation }) => {
-  const [books, setBooks] = useState([]);
+const BooksScreen = ({ navigation }: any) => {
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState({});
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const userId = 'user123';
 
   useEffect(() => {
@@ -17,10 +18,10 @@ const BooksScreen = ({ navigation }) => {
     try {
       const booksData = await bookAPI.getAllBooks();
       setBooks(booksData);
-      
+
       const userProgress = await bookAPI.getUserProgress(userId);
-      const progressMap = {};
-      userProgress.forEach(p => {
+      const progressMap: Record<string, number> = {};
+      userProgress.forEach((p: any) => {
         progressMap[p.bookId._id] = p.percentage;
       });
       setProgress(progressMap);
@@ -31,11 +32,11 @@ const BooksScreen = ({ navigation }) => {
     }
   };
 
-  const openBook = async (book) => {
+  const openBook = async (book: Book) => {
     navigation.navigate('bookReader', { book });
   };
 
-  const renderBook = ({ item }) => (
+  const renderBook = ({ item }: { item: Book }) => (
     <TouchableOpacity 
       style={styles.bookCard}
       onPress={() => openBook(item)}
@@ -45,9 +46,9 @@ const BooksScreen = ({ navigation }) => {
           {item.title}
         </CustomText>
         <CustomText variant="h7" style={styles.date}>
-          Uploaded: {new Date(item.uploadDate).toLocaleDateString()}
+          Uploaded: {new Date(item.uploadDate || '').toLocaleDateString()}
         </CustomText>
-        {progress[item._id] !== undefined && (
+        {item._id && progress[item._id] !== undefined && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: `${progress[item._id]}%` }]} />
@@ -82,7 +83,7 @@ const BooksScreen = ({ navigation }) => {
         <FlatList
           data={books}
           renderItem={renderBook}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => item._id || item.bookId || `book-${index}`}
           contentContainerStyle={styles.list}
         />
       )}
