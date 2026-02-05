@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { bookAPI } from '../../../services/bookService';
 import CustomText from '../../../components/shared/CustomText';
+import SvgImage from '../../../components/shared/SvgImage';
 import { Book } from '@/utils/types';
 
 const BooksScreen = ({ navigation }: any) => {
@@ -37,10 +38,17 @@ const BooksScreen = ({ navigation }: any) => {
   };
 
   const renderBook = ({ item }: { item: Book }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.bookCard}
       onPress={() => openBook(item)}
     >
+      {(item.coverImage || item.iconUrl) && (
+        <SvgImage
+          source={{ uri: item.coverImage || item.iconUrl }}
+          style={styles.bookIcon}
+          resizeMode="cover"
+        />
+      )}
       <View style={styles.bookInfo}>
         <CustomText variant="h5" fontFamily="SemiBold">
           {item.title}
@@ -118,7 +126,16 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  bookIcon: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
+    marginRight: 15,
+    backgroundColor: '#f0f0f0'
   },
   bookInfo: {
     flex: 1

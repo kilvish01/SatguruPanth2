@@ -1,9 +1,10 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, SafeAreaView, View } from 'react-native';
+import { Platform, SafeAreaView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GetAllBooks } from '@/components/API/BooksAPI';
 
 // Import correct path for ForYou - adjust if needed
@@ -13,6 +14,9 @@ import Profile from '../Screens/MainSection/Profile';
 
 const Tab = createBottomTabNavigator();
 
+const BOOKS_CACHE_KEY = '@cached_books';
+const CACHE_EXPIRY_KEY = '@cache_expiry';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 // Safe area wrapper component with proper typing
 interface SafeAreaWrapperProps {
@@ -31,20 +35,53 @@ const SafeAreaWrapper = ({ children }: SafeAreaWrapperProps) => {
 const BottomTabs = ({navigation}:any) => {
   const insets = useSafeAreaInsets();
   const [allBooks, setAllBooks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAllBooks = async () => {
       try {
-        const newReleasedBooks = await GetAllBooks(); // Wait for the API response
-        setAllBooks(newReleasedBooks); // Set the data in state
-        console.log(newReleasedBooks);
+        // Try to load cached books first for instant display
+        const cachedBooks = await AsyncStorage.getItem(BOOKS_CACHE_KEY);
+        const cacheExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
+
+        if (cachedBooks) {
+          const parsedBooks = JSON.parse(cachedBooks);
+          setAllBooks(parsedBooks);
+          setIsLoading(false);
+
+          // Check if cache is still valid
+          if (cacheExpiry && Date.now() < parseInt(cacheExpiry)) {
+            return; // Cache is valid, no need to fetch
+          }
+        }
+
+        // Fetch fresh data from API
+        const newReleasedBooks = await GetAllBooks();
+        setAllBooks(newReleasedBooks);
+
+        // Cache the books for next time
+        await AsyncStorage.setItem(BOOKS_CACHE_KEY, JSON.stringify(newReleasedBooks));
+        await AsyncStorage.setItem(CACHE_EXPIRY_KEY, String(Date.now() + CACHE_DURATION));
+
       } catch (error) {
-        console.error('Error fetching new releases for you class:', error);
+        console.error('Error fetching books:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchAllBooks();
   }, []);
 
+
+  // Show loading screen while fetching books (only on first load without cache)
+  if (isLoading && allBooks.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4A90A4" />
+        <Text style={styles.loadingText}>Loading Books...</Text>
+      </View>
+    );
+  }
 
   return (
     <Tab.Navigator
@@ -135,5 +172,20 @@ const BottomTabs = ({navigation}:any) => {
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
+  },
+});
 
 export default BottomTabs;

@@ -21,6 +21,7 @@ export interface Book {
     title: string;
     author?: string;
     coverImage?: string;
+    iconUrl?: string;
     uploadDate?: string;
     uploadedAt?: string;
     viewCount?: number;

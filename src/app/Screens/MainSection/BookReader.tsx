@@ -11,6 +11,9 @@ const BookReader = ({ route, navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [likeCount, setLikeCount] = useState(book.likeCount || 0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
     loadBook();
@@ -25,6 +28,29 @@ const BookReader = ({ route, navigation }: any) => {
     } catch (error) {
       console.error('Error loading book:', error);
       setLoading(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (isLiking) return;
+
+    setIsLiking(true);
+    const action = isLiked ? 'unlike' : 'like';
+
+    // Optimistic update
+    setLikeCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
+    setIsLiked(!isLiked);
+
+    try {
+      const bookId = book._id || book.BookID || book.bookId;
+      await bookAPI.likeBook(bookId, action);
+    } catch (error) {
+      // Revert on error
+      setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
+      setIsLiked(isLiked);
+      console.error('Error liking/unliking book:', error);
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -146,7 +172,7 @@ const BookReader = ({ route, navigation }: any) => {
       </style>
     </head>
     <body>
-      <div id="loading" class="loading">📖 Loading PDF...</div>
+      <div id="loading" class="loading">📖 Loading Book...</div>
       <div id="pdf-container"></div>
       <div class="swipe-hint left" id="swipe-left">◀</div>
       <div class="swipe-hint right" id="swipe-right">▶</div>
@@ -289,6 +315,20 @@ const BookReader = ({ route, navigation }: any) => {
             </CustomText>
           </View>
         )}
+        <TouchableOpacity
+          onPress={handleLike}
+          style={[styles.likeButton, isLiked && styles.likeButtonActive]}
+          disabled={isLiking}
+        >
+          <Ionicons
+            name={isLiked ? "heart" : "heart-outline"}
+            size={22}
+            color={isLiked ? "#FF4444" : "#000"}
+          />
+          <CustomText variant="h7" style={[styles.likeText, isLiked && styles.likeTextActive]}>
+            {likeCount}
+          </CustomText>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -353,6 +393,29 @@ const styles = StyleSheet.create({
   pageText: {
     color: '#000',
     fontWeight: '600'
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginLeft: 8,
+    gap: 4
+  },
+  likeButtonActive: {
+    backgroundColor: '#FFE8E8',
+    borderColor: '#FF4444'
+  },
+  likeText: {
+    color: '#000',
+    fontWeight: '600'
+  },
+  likeTextActive: {
+    color: '#FF4444'
   },
   webview: {
     flex: 1,

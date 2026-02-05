@@ -56,13 +56,13 @@ export const bookAPI = {
     }
   },
 
-  likeBook: async (bookId: string) => {
+  likeBook: async (bookId: string, action: 'like' | 'unlike' = 'like') => {
     try {
-      const response = await axios.post(`${AWS_API_URL}/api/books/${bookId}/like`);
+      const response = await axios.post(`${AWS_API_URL}/api/books/${bookId}/like`, { action });
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       return data;
     } catch (error) {
-      console.error('Error liking book:', error);
+      console.error('Error liking/unliking book:', error);
       throw error;
     }
   },

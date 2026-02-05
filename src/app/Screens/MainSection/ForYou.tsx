@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { GetAllBooks, GetMostViewed, GetMostLiked } from '@/components/API/BooksAPI';
 import CustomText from '@/components/shared/CustomText';
+import SvgImage from '@/components/shared/SvgImage';
 
 
 
@@ -118,14 +119,22 @@ const ForYou: React.FC<ForYouProps> = ({ navigation,allBooks }) => {
 
 
   const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
-  const renderItem = ({ item }: { item: Book }) => (
+  const renderItem = ({ item }: { item: Book & { coverImage?: string } }) => (
     <TouchableOpacity
       style={styles.bookCard}
       onPress={() => navigation.navigate('bookReader', { book: item })}
     >
-      <Image
-        source={require('../../../assets/images/icon.png')}
-        style={styles.bookCover} />
+      {item.coverImage ? (
+        <SvgImage
+          source={{ uri: item.coverImage }}
+          style={styles.bookCover}
+        />
+      ) : (
+        <Image
+          source={require('../../../assets/images/icon.png')}
+          style={styles.bookCover}
+        />
+      )}
       <View style={styles.bookInfoContainer}>
         <CustomText
           variant="h6"

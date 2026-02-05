@@ -1,0 +1,6 @@
+- Initial release
+- Browse and read spiritual books
+- Like/Unlike your favorite books
+- View count and like count tracking
+- PDF reader with swipe navigation
+- Book sorting (newest, oldest, most viewed, most liked)

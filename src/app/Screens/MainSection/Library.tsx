@@ -10,7 +10,10 @@ import {
   Platform
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import CustomText from '@/components/shared/CustomText';
+import SvgImage from '@/components/shared/SvgImage';
+import { bookAPI } from '@/services/bookService';
 
 
 
@@ -29,6 +32,7 @@ interface Book {
   uploadedAt?: string;
   viewCount?: number;
   likeCount?: number;
+  coverImage?: string;
 }
 
 // Get screen width to calculate grid item size
@@ -46,6 +50,8 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
   const [mostLiked , setMostLiked]  = useState<Book[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
   const [currentStatus, setCurrentStatus] = useState('all');
+  const [likedBooks, setLikedBooks] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
 
 
   useEffect(() => {
@@ -66,6 +72,14 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
         (b.likeCount || 0) - (a.likeCount || 0)
       );
 
+      // Initialize like counts
+      const counts: Record<string, number> = {};
+      allBooks.forEach((book: Book) => {
+        const id = book._id || book.BookID || book.bookId || '';
+        counts[id] = book.likeCount || 0;
+      });
+      setLikeCounts(counts);
+
       setNewestBooks(sortedByDate);
       setOldestBooks(sortedByOldest);
       setMostViewed(sortedByViews);
@@ -73,6 +87,44 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
       setFilteredBooks(allBooks); // Show all books by default
     }
   }, [allBooks]);
+
+  const handleLike = async (book: Book, e: any) => {
+    e.stopPropagation();
+    const bookId = book._id || book.BookID || book.bookId || '';
+    const isCurrentlyLiked = likedBooks.has(bookId);
+    const action = isCurrentlyLiked ? 'unlike' : 'like';
+
+    // Optimistic update
+    if (isCurrentlyLiked) {
+      setLikedBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bookId);
+        return newSet;
+      });
+      setLikeCounts(prev => ({ ...prev, [bookId]: Math.max(0, (prev[bookId] || 1) - 1) }));
+    } else {
+      setLikedBooks(prev => new Set(prev).add(bookId));
+      setLikeCounts(prev => ({ ...prev, [bookId]: (prev[bookId] || 0) + 1 }));
+    }
+
+    try {
+      await bookAPI.likeBook(bookId, action);
+    } catch (error) {
+      // Revert on error
+      if (isCurrentlyLiked) {
+        setLikedBooks(prev => new Set(prev).add(bookId));
+        setLikeCounts(prev => ({ ...prev, [bookId]: (prev[bookId] || 0) + 1 }));
+      } else {
+        setLikedBooks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(bookId);
+          return newSet;
+        });
+        setLikeCounts(prev => ({ ...prev, [bookId]: Math.max(0, (prev[bookId] || 1) - 1) }));
+      }
+      console.error('Error liking/unliking book:', error);
+    }
+  };
 
 
   // Apply sorting to books
@@ -102,9 +154,17 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
       style={styles.bookCard}
       onPress={() => navigation.navigate('bookReader', { book: item })}
     >
-      <Image
-        source={require('../../../assets/images/icon.png')}
-        style={styles.bookCover} />
+      {item.coverImage ? (
+        <SvgImage
+          source={{ uri: item.coverImage }}
+          style={styles.bookCover}
+        />
+      ) : (
+        <Image
+          source={require('../../../assets/images/icon.png')}
+          style={styles.bookCover}
+        />
+      )}
       <View style={styles.bookInfo}>
         <CustomText
           variant="h6"
@@ -122,6 +182,36 @@ const Library: React.FC<LibraryProps> = ({ navigation,allBooks }) => {
         >
           {new Date(item.uploadDate).toLocaleDateString()}
         </CustomText>
+        <View style={styles.statsRow}>
+          <View style={styles.viewStat}>
+            <Ionicons name="eye-outline" size={14} color="#888" />
+            <CustomText variant="h8" style={styles.statText}>
+              {item.viewCount || 0}
+            </CustomText>
+          </View>
+          <TouchableOpacity
+            onPress={(e) => handleLike(item, e)}
+            style={[
+              styles.likeStat,
+              likedBooks.has(item._id || item.BookID || item.bookId || '') && styles.likeStatActive
+            ]}
+          >
+            <Ionicons
+              name={likedBooks.has(item._id || item.BookID || item.bookId || '') ? "heart" : "heart-outline"}
+              size={14}
+              color={likedBooks.has(item._id || item.BookID || item.bookId || '') ? "#FF4444" : "#888"}
+            />
+            <CustomText
+              variant="h8"
+              style={[
+                styles.statText,
+                likedBooks.has(item._id || item.BookID || item.bookId || '') && styles.likedText
+              ]}
+            >
+              {likeCounts[item._id || item.BookID || item.bookId || ''] || 0}
+            </CustomText>
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -328,17 +418,34 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
-  bookStats: {
+  statsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 6,
   },
-  statItem: {
+  viewStat: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  likeStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+  },
+  likeStatActive: {
+    backgroundColor: '#FFE8E8',
+  },
   statText: {
-    color: '#666',
+    color: '#888',
+    fontSize: 11,
     marginLeft: 4,
+  },
+  likedText: {
+    color: '#FF4444',
   },
 });
 

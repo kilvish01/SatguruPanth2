@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet, Image, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomText from '../../../components/shared/CustomText';
+import SvgImage from '../../../components/shared/SvgImage';
 import { bookAPI } from '../../../services/bookService';
 import { Book } from '@/utils/types';
 
@@ -12,16 +13,74 @@ const ITEM_WIDTH = (width - GRID_SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
 const AllBooks = ({ route, navigation }: any) => {
   const { books, title } = route.params;
+  const [likedBooks, setLikedBooks] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+
+  // Initialize like counts from books data
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    books.forEach((book: Book) => {
+      const id = book._id || book.BookID || book.bookId || '';
+      counts[id] = book.likeCount || 0;
+    });
+    setLikeCounts(counts);
+  }, [books]);
+
+  const handleLike = async (book: Book, e: any) => {
+    e.stopPropagation();
+    const bookId = book._id || book.BookID || book.bookId || '';
+    const isCurrentlyLiked = likedBooks.has(bookId);
+    const action = isCurrentlyLiked ? 'unlike' : 'like';
+
+    // Optimistic update
+    if (isCurrentlyLiked) {
+      setLikedBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bookId);
+        return newSet;
+      });
+      setLikeCounts(prev => ({ ...prev, [bookId]: Math.max(0, (prev[bookId] || 1) - 1) }));
+    } else {
+      setLikedBooks(prev => new Set(prev).add(bookId));
+      setLikeCounts(prev => ({ ...prev, [bookId]: (prev[bookId] || 0) + 1 }));
+    }
+
+    try {
+      await bookAPI.likeBook(bookId, action);
+    } catch (error) {
+      // Revert on error
+      if (isCurrentlyLiked) {
+        setLikedBooks(prev => new Set(prev).add(bookId));
+        setLikeCounts(prev => ({ ...prev, [bookId]: (prev[bookId] || 0) + 1 }));
+      } else {
+        setLikedBooks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(bookId);
+          return newSet;
+        });
+        setLikeCounts(prev => ({ ...prev, [bookId]: Math.max(0, (prev[bookId] || 1) - 1) }));
+      }
+      console.error('Error liking/unliking book:', error);
+    }
+  };
 
   const renderBook = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
       onPress={() => navigation.navigate('bookReader', { book: item })}
     >
-      <Image
-        source={require('../../../assets/images/icon.png')}
-        style={styles.bookCover}
-      />
+      {item.coverImage || item.iconUrl ? (
+        <SvgImage
+          source={{ uri: item.coverImage || item.iconUrl }}
+          style={styles.bookCover}
+          resizeMode="cover"
+        />
+      ) : (
+        <Image
+          source={require('../../../assets/images/icon.png')}
+          style={styles.bookCover}
+        />
+      )}
       <View style={styles.bookInfo}>
         <CustomText
           variant="h6"
@@ -40,9 +99,36 @@ const AllBooks = ({ route, navigation }: any) => {
           {new Date(item.uploadDate || item.uploadedAt || '').toLocaleDateString()}
         </CustomText>
         {item.viewCount !== undefined && (
-          <CustomText variant="h8" style={styles.bookStats}>
-            👁 {item.viewCount} • ❤️ {item.likeCount || 0}
-          </CustomText>
+          <View style={styles.statsRow}>
+            <View style={styles.viewStat}>
+              <Ionicons name="eye-outline" size={14} color="#888" />
+              <CustomText variant="h8" style={styles.bookStats}>
+                {item.viewCount}
+              </CustomText>
+            </View>
+            <TouchableOpacity
+              onPress={(e) => handleLike(item, e)}
+              style={[
+                styles.likeStat,
+                likedBooks.has(item._id || item.BookID || item.bookId || '') && styles.likeStatActive
+              ]}
+            >
+              <Ionicons
+                name={likedBooks.has(item._id || item.BookID || item.bookId || '') ? "heart" : "heart-outline"}
+                size={14}
+                color={likedBooks.has(item._id || item.BookID || item.bookId || '') ? "#FF4444" : "#888"}
+              />
+              <CustomText
+                variant="h8"
+                style={[
+                  styles.bookStats,
+                  likedBooks.has(item._id || item.BookID || item.bookId || '') && styles.likedText
+                ]}
+              >
+                {likeCounts[item._id || item.BookID || item.bookId || ''] || 0}
+              </CustomText>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -138,7 +224,31 @@ const styles = StyleSheet.create({
   bookStats: {
     color: '#888',
     fontSize: 11,
-    marginTop: 4,
+    marginLeft: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  viewStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  likeStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+  },
+  likeStatActive: {
+    backgroundColor: '#FFE8E8',
+  },
+  likedText: {
+    color: '#FF4444',
   }
 });
 
