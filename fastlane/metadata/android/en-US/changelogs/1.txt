@@ -1,6 +1,10 @@
-- Initial release
-- Browse and read spiritual books
-- Like/Unlike your favorite books
-- View count and like count tracking
-- PDF reader with swipe navigation
-- Book sorting (newest, oldest, most viewed, most liked)
+Welcome to Satguru Panth — the path within.
+
+• Discover sacred spiritual books in Hindi
+• Beautifully designed reading experience with smooth page turns
+• Browse curated collections: New releases, Most viewed, Most loved
+• Like and save your favorite books
+• Light, dark, and system themes
+• Secure sign-in with biometric unlock support
+
+Begin your journey from Atmadiksha to Atmabodha 🪷

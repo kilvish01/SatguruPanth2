@@ -322,7 +322,7 @@ const Profile: React.FC<ProfileProps> = ({ navigation }) => {
           </Pressable>
 
           <Text variant="caption" subtle centered style={{ marginTop: spacing.xl }}>
-            सतगुरु पंथ · v1.1.0
+            सतगुरु पंथ · v1.0.0
           </Text>
           <Text variant="caption" subtle centered style={{ marginTop: 2 }}>
             Made with devotion 🪷
