@@ -565,7 +565,6 @@ const BookReader = ({ route, navigation }: any) => {
             originWhitelist={['*']}
             mixedContentMode="always"
             scrollEnabled
-            decelerationRate="normal"
           />
         </Animated.View>
       )}
