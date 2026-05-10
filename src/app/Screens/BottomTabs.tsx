@@ -69,7 +69,9 @@ const TabIcon: React.FC<TabIconProps> = ({ focused, iconName, iconNameOutline, l
         variant="caption"
         weight={focused ? 'semibold' : 'medium'}
         color={focused ? colors.primary : colors.textMuted}
-        style={{ marginTop: 2 }}
+        numberOfLines={1}
+        ellipsizeMode="clip"
+        style={{ marginTop: 2, fontSize: 11 }}
       >
         {label}
       </Text>
@@ -234,6 +236,7 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 72,
   },
   iconWrap: {
     width: 44,
