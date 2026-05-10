@@ -1,141 +1,160 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, Linking, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, Linking, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import CustomText from '@/components/shared/CustomText';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+import { useTheme } from '../../../theme/ThemeContext';
+import { Text } from '../../../components/ui/Text';
+import { Card } from '../../../components/ui/Card';
+import { Screen } from '../../../components/ui/Screen';
+
+const PHONE = '9984257903';
+const EMAIL = 'admin@brahmgyanyogsansthan.org';
 
 const ContactUs = ({ navigation }: any) => {
-  const handleCall = () => {
-    Linking.openURL('tel:9984257903');
-  };
+  const { colors, spacing, radius } = useTheme();
 
-  const handleEmail = () => {
-    Linking.openURL('mailto:admin@brahmgyanyogsansthan.org');
+  const safeOpenUrl = async (url: string, fallback: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) await Linking.openURL(url);
+      else Alert.alert('Unable to open', fallback);
+    } catch {
+      Alert.alert('Unable to open', fallback);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <CustomText variant="h4" fontFamily="Bold">
-            Contact Us
-          </CustomText>
-        </View>
+    <Screen edges={['top']}>
+      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingVertical: spacing.md }]}>
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            navigation.goBack();
+          }}
+          style={[styles.iconBtn, { backgroundColor: colors.surfaceMuted }]}
+          hitSlop={8}
+        >
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+        </Pressable>
+        <Text variant="h2" weight="bold">
+          Contact us
+        </Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="location" size={40} color="#000066" />
-          </View>
-          <CustomText variant="h5" fontFamily="Bold" style={styles.label}>
-            पता:
-          </CustomText>
-          <CustomText variant="h6" fontFamily="Regular" style={styles.text}>
-            सुरेशादयाल
-          </CustomText>
-          <CustomText variant="h6" fontFamily="Regular" style={styles.text}>
-            ब्रह्मज्ञान योग संस्थान मोचकला, बिसवां
-          </CustomText>
-          <CustomText variant="h6" fontFamily="Regular" style={styles.text}>
-            सीतापुर, उ० प्र०, भारत
-          </CustomText>
-        </View>
+      <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 80 }}>
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <Text variant="h3" weight="semibold">
+            We'd love to hear from you
+          </Text>
+          <Text variant="bodySm" muted style={{ marginTop: spacing.xs }}>
+            Reach out for guidance, queries, or to share your seva
+          </Text>
+        </Animated.View>
 
-        <TouchableOpacity style={styles.card} onPress={handleCall}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="call" size={40} color="#000066" />
-          </View>
-          <CustomText variant="h5" fontFamily="Bold" style={styles.label}>
-            फ़ोन:
-          </CustomText>
-          <CustomText variant="h6" fontFamily="Regular" style={styles.linkText}>
-            मो० 9984257903
-          </CustomText>
-          <View style={styles.actionHint}>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(80).duration(400)} style={{ marginTop: spacing.xl }}>
+          <Card variant="outlined" padded radius="xl">
+            <View style={styles.row}>
+              <View style={[styles.icon, { backgroundColor: colors.primaryMuted }]}>
+                <Ionicons name="location" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="overline" muted>
+                  ADDRESS
+                </Text>
+                <Text variant="body" weight="medium" style={{ marginTop: 4 }}>
+                  सुरेशादयाल
+                </Text>
+                <Text variant="bodySm" muted style={{ marginTop: 2 }}>
+                  ब्रह्मज्ञान योग संस्थान मोचकला, बिसवां
+                </Text>
+                <Text variant="bodySm" muted style={{ marginTop: 2 }}>
+                  सीतापुर, उत्तर प्रदेश, भारत
+                </Text>
+              </View>
+            </View>
+          </Card>
+        </Animated.View>
 
-        <TouchableOpacity style={styles.card} onPress={handleEmail}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="mail" size={40} color="#000066" />
-          </View>
-          <CustomText variant="h5" fontFamily="Bold" style={styles.label}>
-            ईमेल:
-          </CustomText>
-          <CustomText variant="h6" fontFamily="Regular" style={styles.linkText}>
-            admin@brahmgyanyogsansthan.org
-          </CustomText>
-          <View style={styles.actionHint}>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(160).duration(400)} style={{ marginTop: spacing.md }}>
+          <Pressable
+            onPress={() => safeOpenUrl(`tel:${PHONE}`, `Call ${PHONE}`)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <Card variant="outlined" padded radius="xl">
+              <View style={styles.row}>
+                <View style={[styles.icon, { backgroundColor: colors.primaryMuted }]}>
+                  <Ionicons name="call" size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="overline" muted>
+                    CALL
+                  </Text>
+                  <Text variant="body" weight="semibold" style={{ marginTop: 4 }}>
+                    +91 {PHONE}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+              </View>
+            </Card>
+          </Pressable>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(240).duration(400)} style={{ marginTop: spacing.md }}>
+          <Pressable
+            onPress={() => safeOpenUrl(`mailto:${EMAIL}`, `Email ${EMAIL}`)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <Card variant="outlined" padded radius="xl">
+              <View style={styles.row}>
+                <View style={[styles.icon, { backgroundColor: colors.primaryMuted }]}>
+                  <Ionicons name="mail" size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="overline" muted>
+                    EMAIL
+                  </Text>
+                  <Text variant="body" weight="semibold" style={{ marginTop: 4 }} numberOfLines={1}>
+                    {EMAIL}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+              </View>
+            </Card>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0'
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    paddingTop: Platform.OS === 'ios' ? 50 : 40
+    gap: 12,
   },
-  backButton: {
-    padding: 5
-  },
-  titleContainer: {
-    flex: 1,
-    marginHorizontal: 15
-  },
-  content: {
-    flex: 1,
-    padding: 15
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2
-  },
-  iconContainer: {
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    marginBottom: 15
+    justifyContent: 'center',
   },
-  label: {
-    color: '#000',
-    marginBottom: 10
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  text: {
-    color: '#333',
-    marginBottom: 5,
-    lineHeight: 24
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  linkText: {
-    color: '#000066',
-    marginBottom: 5,
-    lineHeight: 24
-  },
-  actionHint: {
-    position: 'absolute',
-    right: 20,
-    top: '50%',
-    marginTop: -10
-  }
 });
 
 export default ContactUs;

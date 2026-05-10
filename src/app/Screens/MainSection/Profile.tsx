@@ -1,290 +1,393 @@
-import React from 'react';
-import { 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView,
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Image,
+  Pressable,
+  StyleSheet,
   ScrollView,
-  Platform
+  Alert,
+  Share,
+  Switch,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { StackNavigationProp } from '@react-navigation/stack';
-import CustomText from '@/components/shared/CustomText';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
-// Define navigation types
-type ProfileStackParamList = {
-  library: undefined;
-  editProfile: undefined;
-  aboutSatguruPanth: undefined;
-  contactUs: undefined;
-  notifications: undefined;
-  loginPage: undefined;
-};
-
-type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList>;
+import { useTheme } from '../../../theme/ThemeContext';
+import { useAuth } from '../../../security/AuthContext';
+import { Text } from '../../../components/ui/Text';
+import { Card } from '../../../components/ui/Card';
+import { Screen } from '../../../components/ui/Screen';
+import { isBiometricAvailable, getBiometryType } from '../../../security/biometric';
+import { secureGet, secureSet, SecureKeys } from '../../../security/secureStorage';
 
 interface ProfileProps {
-  navigation: ProfileScreenNavigationProp;
+  navigation: any;
+}
+
+interface RowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  iconBg?: string;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  rightContent?: React.ReactNode;
+  showChevron?: boolean;
+  destructive?: boolean;
 }
 
 const Profile: React.FC<ProfileProps> = ({ navigation }) => {
-  const wishlist = () => {
-    navigation.navigate('library');
+  const { colors, spacing, radius, mode, setMode, isDark } = useTheme();
+  const { user, signOut } = useAuth();
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometryType, setBiometryType] = useState<'fingerprint' | 'face' | 'iris' | 'unknown'>(
+    'unknown'
+  );
+
+  useEffect(() => {
+    (async () => {
+      const available = await isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (available) {
+        setBiometryType((await getBiometryType()) ?? 'unknown');
+        const stored = await secureGet(SecureKeys.BIOMETRIC_ENABLED);
+        setBiometricEnabled(stored === '1');
+      }
+    })();
+  }, []);
+
+  const toggleBiometric = useCallback(
+    async (value: boolean) => {
+      Haptics.selectionAsync().catch(() => {});
+      setBiometricEnabled(value);
+      await secureSet(SecureKeys.BIOMETRIC_ENABLED, value ? '1' : '0');
+    },
+    []
+  );
+
+  const handleSignOut = () => {
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+          await signOut();
+          navigation.reset({ index: 0, routes: [{ name: 'loginPage' }] });
+        },
+      },
+    ]);
   };
 
-  const profile = () => {
-    navigation.navigate('editProfile');
+  const handleShare = async () => {
+    Haptics.selectionAsync().catch(() => {});
+    try {
+      await Share.share({
+        message:
+          'Begin your spiritual journey with Satguru Panth — discover sacred wisdom from Atmadiksha to Atmabodha 🪷',
+      });
+    } catch {
+      // ignored
+    }
   };
 
-  const aboutSatguruPanth = () => {
-    navigation.navigate('aboutSatguruPanth');
+  const cycleTheme = () => {
+    Haptics.selectionAsync().catch(() => {});
+    const next = mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light';
+    setMode(next);
   };
 
-  const contactUs = () => {
-    navigation.navigate('contactUs');
-  };
-
-  const notifications = () => {
-    navigation.navigate('notifications');
-  };
-
-  const signOut = () => {
-    // Add sign out logic here
-    navigation.navigate('loginPage');
-  };
-
-  // Main render with SafeAreaView properly applied
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Image
-              source={require('@/assets/images/icon.png')} // Update with your actual image path
-              style={styles.profileImage}
-            />
-            <View style={styles.headerTextContainer}>
-              <CustomText variant="h5" fontFamily="Bold" style={styles.name}>
-                Amish Mishra
-              </CustomText>
-              <View style={styles.statusContainer}>
-                <View style={styles.statusDot} />
-                <CustomText variant="h8" fontFamily="Regular" style={styles.status}>
-                  Active
-                </CustomText>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.profileCard}>
-            <TouchableOpacity style={styles.optionContainer}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="location-on" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Delhi in India
-              </CustomText>
-              <CustomText variant="h7" fontFamily="Medium" style={styles.optionAction}>
-                Update
-              </CustomText>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.optionContainer} onPress={profile}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="person" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Profile
-              </CustomText>
-              <MaterialIcons name="chevron-right" size={22} color="#000" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.optionContainer} onPress={wishlist}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="favorite" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Wishlist
-              </CustomText>
-              <CustomText variant="h7" fontFamily="Regular" style={styles.optionAction}>
-                3 Books in Wishlist
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.profileCard}>
-            <TouchableOpacity style={styles.optionContainer} onPress={aboutSatguruPanth}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="info" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                About Satguru Panth
-              </CustomText>
-              <MaterialIcons name="chevron-right" size={22} color="#000" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.optionContainer} 
-              onPress={notifications}
-            >
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="notifications" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Notification Settings
-              </CustomText>
-              <MaterialIcons name="chevron-right" size={22} color="#000" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.optionContainer} onPress={contactUs}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="phone" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Contact Us
-              </CustomText>
-              <MaterialIcons name="chevron-right" size={22} color="#000" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.optionContainer}>
-              <View style={styles.optionIconContainer}>
-                <MaterialIcons name="share" size={22} color="#000" />
-              </View>
-              <CustomText variant="h6" fontFamily="Medium" style={styles.optionText}>
-                Share this App
-              </CustomText>
-              <CustomText variant="h7" fontFamily="Regular" style={styles.optionAction}>
-                Share with friends
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-            <MaterialIcons name="exit-to-app" size={22} color="white" />
-            <CustomText variant="h6" fontFamily="Bold" style={styles.signOutText}>
-              Sign out
-            </CustomText>
-          </TouchableOpacity>
-
-          <View style={styles.versionContainer}>
-            <CustomText variant="h8" fontFamily="Regular" style={styles.versionText}>
-              Version 1.0.0
-            </CustomText>
-          </View>
-        </ScrollView>
+  const Row: React.FC<RowProps> = ({
+    icon,
+    iconColor,
+    iconBg,
+    title,
+    subtitle,
+    onPress,
+    rightContent,
+    showChevron,
+    destructive,
+  }) => (
+    <Pressable
+      onPress={() => {
+        if (onPress) {
+          Haptics.selectionAsync().catch(() => {});
+          onPress();
+        }
+      }}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          opacity: pressed ? 0.6 : 1,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.iconWrap,
+          {
+            backgroundColor: iconBg ?? colors.surfaceMuted,
+            borderRadius: radius.md,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={18} color={iconColor ?? colors.text} />
       </View>
-    </SafeAreaView>
+      <View style={{ flex: 1 }}>
+        <Text variant="body" weight="medium" color={destructive ? colors.danger : colors.text}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text variant="caption" subtle style={{ marginTop: 2 }}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {rightContent}
+      {showChevron && <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />}
+    </Pressable>
+  );
+
+  const themeLabel = mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System';
+  const themeIcon: keyof typeof Ionicons.glyphMap =
+    mode === 'light' ? 'sunny' : mode === 'dark' ? 'moon' : 'phone-portrait';
+
+  const biometricLabel =
+    biometryType === 'face' ? 'Face ID' : biometryType === 'fingerprint' ? 'Fingerprint' : 'Biometric';
+
+  return (
+    <Screen edges={['top']}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        <Animated.View entering={FadeInDown.duration(400)} style={{ paddingHorizontal: spacing.xl }}>
+          <Text variant="h1" weight="bold" style={{ marginTop: spacing.sm }}>
+            Profile
+          </Text>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(400)}
+          style={{ paddingHorizontal: spacing.xl, marginTop: spacing.lg }}
+        >
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.card, { borderRadius: radius.xxl, padding: spacing.xl }]}
+          >
+            <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
+              <Image source={require('@/assets/images/icon.png')} style={styles.avatarImg} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="h2" weight="bold" color={colors.primaryFg}>
+                {user?.name || 'Welcome, Seeker'}
+              </Text>
+              <Text variant="bodySm" color="rgba(255,255,255,0.85)" style={{ marginTop: 2 }}>
+                {user?.phone || 'Sign in to personalize your journey'}
+              </Text>
+              <Pressable
+                onPress={() => navigation.navigate('editProfile')}
+                style={[styles.editBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+              >
+                <Text variant="caption" weight="semibold" color={colors.primaryFg}>
+                  Edit profile
+                </Text>
+                <Ionicons name="arrow-forward" size={12} color={colors.primaryFg} />
+              </Pressable>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInDown.delay(120).duration(400)}
+          style={{ paddingHorizontal: spacing.xl, marginTop: spacing.xl }}
+        >
+          <Text variant="overline" muted style={{ marginBottom: spacing.sm, marginLeft: 4 }}>
+            Preferences
+          </Text>
+          <Card variant="outlined" padded={false} radius="xl">
+            <Row
+              icon={themeIcon}
+              iconBg={colors.primaryMuted}
+              iconColor={colors.primary}
+              title="Appearance"
+              subtitle={`Currently: ${themeLabel}`}
+              onPress={cycleTheme}
+              rightContent={
+                <View style={[styles.modePill, { backgroundColor: colors.surfaceMuted }]}>
+                  <Text variant="caption" weight="semibold" muted>
+                    {themeLabel}
+                  </Text>
+                </View>
+              }
+            />
+            <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+            {biometricAvailable && (
+              <>
+                <Row
+                  icon={biometryType === 'face' ? 'scan' : 'finger-print'}
+                  iconBg={colors.primaryMuted}
+                  iconColor={colors.primary}
+                  title={`Unlock with ${biometricLabel}`}
+                  subtitle="Securely access the app instantly"
+                  rightContent={
+                    <Switch
+                      value={biometricEnabled}
+                      onValueChange={toggleBiometric}
+                      trackColor={{ false: colors.border, true: colors.primary }}
+                      thumbColor="#FFFFFF"
+                    />
+                  }
+                />
+                <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              </>
+            )}
+            <Row
+              icon="notifications-outline"
+              iconBg={colors.primaryMuted}
+              iconColor={colors.primary}
+              title="Notifications"
+              subtitle="Daily readings, new releases"
+              onPress={() => navigation.navigate('notifications')}
+              showChevron
+            />
+          </Card>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInDown.delay(180).duration(400)}
+          style={{ paddingHorizontal: spacing.xl, marginTop: spacing.xl }}
+        >
+          <Text variant="overline" muted style={{ marginBottom: spacing.sm, marginLeft: 4 }}>
+            About
+          </Text>
+          <Card variant="outlined" padded={false} radius="xl">
+            <Row
+              icon="information-circle-outline"
+              iconBg={colors.surfaceMuted}
+              title="About Satguru Panth"
+              subtitle="The path within"
+              onPress={() => navigation.navigate('aboutSatguruPanth')}
+              showChevron
+            />
+            <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+            <Row
+              icon="call-outline"
+              iconBg={colors.surfaceMuted}
+              title="Contact us"
+              subtitle="Get in touch with the sansthan"
+              onPress={() => navigation.navigate('contactUs')}
+              showChevron
+            />
+            <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+            <Row
+              icon="share-social-outline"
+              iconBg={colors.surfaceMuted}
+              title="Share this app"
+              subtitle="Spread the wisdom"
+              onPress={handleShare}
+              showChevron
+            />
+          </Card>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInDown.delay(240).duration(400)}
+          style={{ paddingHorizontal: spacing.xl, marginTop: spacing.xl }}
+        >
+          <Pressable
+            onPress={handleSignOut}
+            style={({ pressed }) => [
+              styles.signOut,
+              {
+                backgroundColor: colors.dangerMuted,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+            <Text variant="body" weight="semibold" color={colors.danger}>
+              Sign out
+            </Text>
+          </Pressable>
+
+          <Text variant="caption" subtle centered style={{ marginTop: spacing.xl }}>
+            सतगुरु पंथ · v1.1.0
+          </Text>
+          <Text variant="caption" subtle centered style={{ marginTop: 2 }}>
+            Made with devotion 🪷
+          </Text>
+        </Animated.View>
+      </ScrollView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 0 : 25, // Only add top padding on Android
-  },
-  header: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    gap: 16,
   },
-  headerTextContainer: {
-    flexDirection: 'column',
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImg: {
+    width: 44,
+    height: 44,
+    resizeMode: 'contain',
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 15,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  name: {
-    color: '#000',
-    marginBottom: 4,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'green',
-    marginRight: 5,
-  },
-  status: {
-    color: '#666',
-  },
-  profileCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 5,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  optionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  optionIconContainer: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  optionText: {
-    flex: 1,
-    color: '#000',
-  },
-  optionAction: {
-    color: '#666',
+  modePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
   divider: {
-    height: 15,
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
   },
-  signOutButton: {
+  signOut: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
-    paddingVertical: 15,
-    borderRadius: 10,
-    marginTop: 10,
-    marginBottom: 15,
+    gap: 8,
   },
-  signOutText: {
-    color: 'white',
-    marginLeft: 8,
-  },
-  versionContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  versionText: {
-    color: '#666',
-  }
 });
 
 export default Profile;

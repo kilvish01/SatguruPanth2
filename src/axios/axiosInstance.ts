@@ -1,44 +1,78 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { API_CONFIG } from '../config/api.config';
+import { secureGet, secureDelete, SecureKeys } from '../security/secureStorage';
 
-// Create an Axios instance with default configuration
+const APP_VERSION = (Constants.expoConfig as any)?.version || '1.0.0';
+
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000', // Your backend API base URL
-    headers: {
-        'Content-Type': 'application/json',
-        "Access-Control-Allow-Origin": "*"
-    },
+  baseURL: API_CONFIG.AWS_API_URL,
+  timeout: API_CONFIG.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Client-Platform': Platform.OS,
+    'X-Client-Version': APP_VERSION,
+  },
 });
 
-// Request interceptor to log the request details
-axiosInstance.interceptors.request.use((request) => {
-    console.log('Request URL:', request.url);  // Log the URL
-    console.log('Request Method:', request.method);  // Log the request method (GET, POST, etc.)
-    console.log('Request Headers:', request.headers);  // Log headers if needed
+axiosInstance.interceptors.request.use(
+  async (request) => {
+    try {
+      const token = await secureGet(SecureKeys.AUTH_TOKEN);
+      if (token && request.headers) {
+        request.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // proceed without token
+    }
+    if (__DEV__) {
+      console.log(`[API] ${request.method?.toUpperCase()} ${request.url}`);
+    }
     return request;
-}, (error) => {
+  },
+  (error) => Promise.reject(error)
+);
+
+interface RetryConfig extends AxiosRequestConfig {
+  __retryCount?: number;
+}
+
+axiosInstance.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    const config = error.config as RetryConfig | undefined;
+
+    if (error.response?.status === 401) {
+      await secureDelete(SecureKeys.AUTH_TOKEN);
+      await secureDelete(SecureKeys.REFRESH_TOKEN);
+      return Promise.reject(error);
+    }
+
+    if (
+      config &&
+      (!error.response || error.response.status >= 500) &&
+      (config.__retryCount ?? 0) < (API_CONFIG.RETRY_ATTEMPTS - 1)
+    ) {
+      config.__retryCount = (config.__retryCount ?? 0) + 1;
+      const delay = Math.min(1000 * Math.pow(2, config.__retryCount), 8000);
+      await new Promise((r) => setTimeout(r, delay));
+      return axiosInstance(config);
+    }
+
     return Promise.reject(error);
-});
+  }
+);
 
 export const getUser = async () => {
-    try {
-        const response = await axiosInstance.get(`/user`);
-        console.log(response);
-        return response.data; // Return the user data if successful
-    } catch (error) {
-        console.error("Error fetching user data:", error);
-        throw error; // Rethrow the error so it can be caught elsewhere
-    }
+  const { data } = await axiosInstance.get('/user');
+  return data;
 };
 
 export const getNewReleasedBooks = async () => {
-    try{
-        const response = await axiosInstance.get(`/books/getNewReleasedBooks`);
-        console.log(response);
-        return response.data;
-    }catch(error){
-        console.error("Error fetching books data: ",error);
-        throw error;
-    }
-}
+  const { data } = await axiosInstance.get('/books/getNewReleasedBooks');
+  return data;
+};
 
 export default axiosInstance;

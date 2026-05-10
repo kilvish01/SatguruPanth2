@@ -1,432 +1,458 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import CustomText from '../../../components/shared/CustomText';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  FadeIn,
+} from 'react-native-reanimated';
+import { useTheme } from '../../../theme/ThemeContext';
+import { Text } from '../../../components/ui/Text';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { Screen } from '../../../components/ui/Screen';
 import { bookAPI } from '../../../services/bookService';
+import { sanitizeText } from '../../../security/validation';
 
 const BookReader = ({ route, navigation }: any) => {
   const { book } = route.params;
+  const { colors, spacing, radius, isDark } = useTheme();
+
   const [pdfUrl, setPdfUrl] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [likeCount, setLikeCount] = useState(book.likeCount || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
 
-  useEffect(() => {
-    loadBook();
-  }, []);
+  const heartScale = useSharedValue(1);
 
-  const loadBook = async () => {
+  const loadBook = useCallback(async () => {
     try {
       const bookId = book._id || book.BookID || book.bookId;
       const bookData = await bookAPI.getBook(bookId);
-      setPdfUrl(bookData.pdfUrl);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading book:', error);
+      const url = bookData?.pdfUrl;
+      if (!url) {
+        setError('PDF URL unavailable');
+      } else {
+        setPdfUrl(url);
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Unable to load book');
+    } finally {
       setLoading(false);
     }
-  };
+  }, [book]);
+
+  useEffect(() => {
+    loadBook();
+  }, [loadBook]);
 
   const handleLike = async () => {
     if (isLiking) return;
-
     setIsLiking(true);
-    const action = isLiked ? 'unlike' : 'like';
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
-    // Optimistic update
-    setLikeCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
-    setIsLiked(!isLiked);
+    heartScale.value = withSpring(1.4, { damping: 8, stiffness: 240 }, () => {
+      heartScale.value = withSpring(1);
+    });
+
+    const wasLiked = isLiked;
+    setLikeCount((p: number) => Math.max(0, wasLiked ? p - 1 : p + 1));
+    setIsLiked(!wasLiked);
 
     try {
       const bookId = book._id || book.BookID || book.bookId;
-      await bookAPI.likeBook(bookId, action);
-    } catch (error) {
-      // Revert on error
-      setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
-      setIsLiked(isLiked);
-      console.error('Error liking/unliking book:', error);
+      await bookAPI.likeBook(bookId, wasLiked ? 'unlike' : 'like');
+    } catch {
+      setLikeCount((p: number) => Math.max(0, wasLiked ? p + 1 : p - 1));
+      setIsLiked(wasLiked);
     } finally {
       setIsLiking(false);
     }
   };
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          -webkit-tap-highlight-color: transparent;
-        }
-        body {
-          background: #f0f0f0;
-          overflow: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          touch-action: pan-y;
-        }
-        #pdf-container {
-          width: 100%;
-          height: calc(100vh - 120px);
-          overflow-y: auto;
-          text-align: center;
-          padding: 15px;
-          transition: opacity 0.3s ease;
-        }
-        canvas {
-          max-width: 100%;
-          height: auto;
-          margin: 0 auto;
-          display: block;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          border-radius: 8px;
-          background: white;
-        }
-        .controls {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: white;
-          border-top: 1px solid #ddd;
-          padding: 15px 20px;
-          padding-bottom: 60px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          height: 120px;
-          box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        }
-        .btn-group {
-          display: flex;
-          gap: 10px;
-        }
-        button {
-          background: #000;
-          color: white;
-          border: none;
-          padding: 10px 18px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          min-width: 80px;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-        button:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-        button:active:not(:disabled) {
-          transform: scale(0.95);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-        .page-info {
-          font-size: 15px;
-          font-weight: 600;
-          color: #000;
-          background: #f0f0f0;
-          padding: 8px 16px;
-          border-radius: 20px;
-          border: 1px solid #ddd;
-        }
-        .loading {
-          color: #000;
-          text-align: center;
-          padding: 50px;
-          font-size: 18px;
-          font-weight: 500;
-        }
-        .swipe-hint {
-          position: fixed;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 40px;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          pointer-events: none;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        .swipe-hint.left {
-          left: 30px;
-        }
-        .swipe-hint.right {
-          right: 30px;
-        }
-        .swipe-hint.show {
-          opacity: 0.6;
-        }
-        .page-transition {
-          opacity: 0.5;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="loading" class="loading">📖 Loading Book...</div>
-      <div id="pdf-container"></div>
-      <div class="swipe-hint left" id="swipe-left">◀</div>
-      <div class="swipe-hint right" id="swipe-right">▶</div>
-      <div class="controls">
-        <button id="prev" onclick="prevPage()" disabled>◀ Previous</button>
-        <span class="page-info">
-          <span id="page-num">1</span> / <span id="page-count">0</span>
-        </span>
-        <button id="next" onclick="nextPage()" disabled>Next ▶</button>
-      </div>
-      <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let pdfDoc = null;
-        let pageNum = 1;
-        let pageRendering = false;
-        let pageNumPending = null;
-        const scale = 1.8;
+  const heartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
 
-        function renderPage(num, showTransition = false) {
-          pageRendering = true;
-          const container = document.getElementById('pdf-container');
+  const progress = totalPages > 0 ? currentPage / totalPages : 0;
 
-          if (showTransition) {
-            container.classList.add('page-transition');
-          }
+  const htmlContent = useMemo(() => {
+    if (!pdfUrl) return '';
+    const safePdfUrl = pdfUrl.replace(/'/g, "\\'");
+    const bgColor = isDark ? '#0E0C09' : '#FAF8F3';
+    const surfaceColor = isDark ? '#181613' : '#FFFFFF';
+    const textColor = isDark ? '#F5F1E8' : '#1A1814';
+    const accentColor = isDark ? '#E5B53E' : '#C8932B';
+    const borderColor = isDark ? '#2C2925' : '#E8E2D5';
 
-          pdfDoc.getPage(num).then(function(page) {
-            const viewport = page.getViewport({scale: scale});
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: ${bgColor};
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      touch-action: pan-y;
+      color: ${textColor};
+    }
+    #pdf-container {
+      width: 100%;
+      height: 100vh;
+      overflow-y: auto;
+      text-align: center;
+      padding: 20px 12px 100px 12px;
+      transition: opacity 0.25s ease;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+      box-shadow: 0 8px 32px rgba(0,0,0,${isDark ? '0.5' : '0.12'});
+      border-radius: 12px;
+      background: ${surfaceColor};
+    }
+    .loading {
+      color: ${textColor};
+      text-align: center;
+      padding: 80px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .swipe-hint {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 22px;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .swipe-hint.left { left: 16px; }
+    .swipe-hint.right { right: 16px; }
+    .swipe-hint.show { opacity: 0.85; }
+    .page-transition { opacity: 0.4; }
+    .floating-controls {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: ${surfaceColor};
+      border: 1px solid ${borderColor};
+      box-shadow: 0 12px 32px rgba(0,0,0,${isDark ? '0.4' : '0.10'});
+      padding: 10px 16px;
+      border-radius: 999px;
+    }
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      background: transparent;
+      color: ${textColor};
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-btn:disabled { opacity: 0.3; }
+    .nav-btn:active:not(:disabled) { background: ${bgColor}; }
+    .page-pill {
+      font-size: 13px;
+      font-weight: 600;
+      color: ${textColor};
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: ${bgColor};
+      min-width: 60px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">Loading…</div>
+  <div id="pdf-container"></div>
+  <div class="swipe-hint left" id="swipe-left">‹</div>
+  <div class="swipe-hint right" id="swipe-right">›</div>
+  <div class="floating-controls">
+    <button id="prev" class="nav-btn" onclick="prevPage()" disabled>‹</button>
+    <span class="page-pill"><span id="page-num">1</span> / <span id="page-count">…</span></span>
+    <button id="next" class="nav-btn" onclick="nextPage()" disabled>›</button>
+  </div>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    let pdfDoc = null;
+    let pageNum = 1;
+    let pageRendering = false;
+    let pageNumPending = null;
+    const scale = 1.8;
 
-            container.innerHTML = '';
-            container.appendChild(canvas);
+    function renderPage(num, showTransition = false) {
+      pageRendering = true;
+      const container = document.getElementById('pdf-container');
+      if (showTransition) container.classList.add('page-transition');
 
-            page.render({canvasContext: ctx, viewport: viewport}).promise.then(function() {
-              pageRendering = false;
-              container.classList.remove('page-transition');
-
-              if (pageNumPending !== null) {
-                renderPage(pageNumPending, true);
-                pageNumPending = null;
-              }
-            });
-          });
-
-          document.getElementById('page-num').textContent = num;
-          document.getElementById('prev').disabled = (num <= 1);
-          document.getElementById('next').disabled = (num >= pdfDoc.numPages);
-          window.ReactNativeWebView.postMessage(JSON.stringify({page: num, total: pdfDoc.numPages}));
-        }
-
-        function queueRenderPage(num) {
-          if (pageRendering) {
-            pageNumPending = num;
-          } else {
-            renderPage(num, true);
-          }
-        }
-
-        function prevPage() {
-          if (pageNum <= 1) return;
-          pageNum--;
-          queueRenderPage(pageNum);
-        }
-
-        function nextPage() {
-          if (pageNum >= pdfDoc.numPages) return;
-          pageNum++;
-          queueRenderPage(pageNum);
-        }
-
-        // Initialize Hammer.js for swipe gestures
-        const body = document.body;
-        const hammer = new Hammer(body);
-
-        hammer.on('swipeleft', function() {
-          if (pageNum < pdfDoc.numPages) {
-            const hint = document.getElementById('swipe-right');
-            hint.classList.add('show');
-            setTimeout(() => hint.classList.remove('show'), 300);
-            nextPage();
+      pdfDoc.getPage(num).then(function(page) {
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        container.innerHTML = '';
+        container.appendChild(canvas);
+        page.render({ canvasContext: ctx, viewport }).promise.then(function() {
+          pageRendering = false;
+          container.classList.remove('page-transition');
+          if (pageNumPending !== null) {
+            renderPage(pageNumPending, true);
+            pageNumPending = null;
           }
         });
+      });
 
-        hammer.on('swiperight', function() {
-          if (pageNum > 1) {
-            const hint = document.getElementById('swipe-left');
-            hint.classList.add('show');
-            setTimeout(() => hint.classList.remove('show'), 300);
-            prevPage();
-          }
-        });
+      document.getElementById('page-num').textContent = num;
+      document.getElementById('prev').disabled = (num <= 1);
+      document.getElementById('next').disabled = (num >= pdfDoc.numPages);
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({page: num, total: pdfDoc.numPages}));
+      }
+    }
 
-        pdfjsLib.getDocument({
-          url: '${pdfUrl}',
-          withCredentials: false,
-          isEvalSupported: false
-        }).promise.then(function(pdf) {
-          pdfDoc = pdf;
-          document.getElementById('page-count').textContent = pdf.numPages;
-          document.getElementById('loading').style.display = 'none';
-          renderPage(pageNum);
-          document.getElementById('prev').disabled = false;
-          document.getElementById('next').disabled = false;
-        }).catch(function(error) {
-          document.getElementById('loading').innerHTML = '❌ Error loading PDF<br><small>' + error.message + '</small>';
-        });
-      </script>
-    </body>
-    </html>
-  `;
+    function queueRenderPage(num) {
+      if (pageRendering) pageNumPending = num;
+      else renderPage(num, true);
+    }
+    function prevPage() { if (pageNum > 1) { pageNum--; queueRenderPage(pageNum); } }
+    function nextPage() { if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; queueRenderPage(pageNum); } }
+
+    const hammer = new Hammer(document.body);
+    hammer.on('swipeleft', function() {
+      if (pdfDoc && pageNum < pdfDoc.numPages) {
+        const hint = document.getElementById('swipe-right');
+        hint.classList.add('show');
+        setTimeout(() => hint.classList.remove('show'), 250);
+        nextPage();
+      }
+    });
+    hammer.on('swiperight', function() {
+      if (pageNum > 1) {
+        const hint = document.getElementById('swipe-left');
+        hint.classList.add('show');
+        setTimeout(() => hint.classList.remove('show'), 250);
+        prevPage();
+      }
+    });
+
+    pdfjsLib.getDocument({
+      url: '${safePdfUrl}',
+      withCredentials: false,
+      isEvalSupported: false
+    }).promise.then(function(pdf) {
+      pdfDoc = pdf;
+      document.getElementById('page-count').textContent = pdf.numPages;
+      document.getElementById('loading').style.display = 'none';
+      renderPage(pageNum);
+      document.getElementById('prev').disabled = false;
+      document.getElementById('next').disabled = false;
+    }).catch(function(error) {
+      document.getElementById('loading').innerHTML = 'Could not load this book. Please try again.';
+    });
+  </script>
+</body>
+</html>`;
+  }, [pdfUrl, isDark]);
 
   const onMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      setCurrentPage(data.page);
-      setTotalPages(data.total);
-    } catch (error) {
-      console.error('Error parsing message:', error);
+      if (typeof data?.page === 'number') setCurrentPage(data.page);
+      if (typeof data?.total === 'number') setTotalPages(data.total);
+    } catch {
+      // ignore malformed message
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <CustomText variant="h6" fontFamily="SemiBold" numberOfLines={1} style={styles.title}>
-            {book.title}
-          </CustomText>
-        </View>
-        {totalPages > 1 && (
-          <View style={styles.pageInfo}>
-            <CustomText variant="h7" style={styles.pageText}>
-              {currentPage}/{totalPages}
-            </CustomText>
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={handleLike}
-          style={[styles.likeButton, isLiked && styles.likeButtonActive]}
-          disabled={isLiking}
+    <Screen edges={['top']}>
+      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingVertical: spacing.md }]}>
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            navigation.goBack();
+          }}
+          style={[styles.iconBtn, { backgroundColor: colors.surfaceMuted }]}
+          hitSlop={8}
         >
-          <Ionicons
-            name={isLiked ? "heart" : "heart-outline"}
-            size={22}
-            color={isLiked ? "#FF4444" : "#000"}
-          />
-          <CustomText variant="h7" style={[styles.likeText, isLiked && styles.likeTextActive]}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+        </Pressable>
+        <View style={styles.titleWrap}>
+          <Text variant="bodySm" weight="semibold" numberOfLines={1}>
+            {sanitizeText(book.title || 'Untitled')}
+          </Text>
+          {totalPages > 1 && (
+            <Text variant="caption" subtle style={{ marginTop: 1 }}>
+              Page {currentPage} of {totalPages}
+            </Text>
+          )}
+        </View>
+        <Pressable
+          onPress={handleLike}
+          disabled={isLiking}
+          style={[
+            styles.likeBtn,
+            {
+              backgroundColor: isLiked ? colors.dangerMuted : colors.surfaceMuted,
+              borderRadius: radius.pill,
+            },
+          ]}
+        >
+          <Animated.View style={heartStyle}>
+            <Ionicons
+              name={isLiked ? 'heart' : 'heart-outline'}
+              size={16}
+              color={isLiked ? colors.danger : colors.text}
+            />
+          </Animated.View>
+          <Text
+            variant="caption"
+            weight="semibold"
+            color={isLiked ? colors.danger : colors.text}
+          >
             {likeCount}
-          </CustomText>
-        </TouchableOpacity>
+          </Text>
+        </Pressable>
       </View>
 
+      {totalPages > 1 && (
+        <View style={[styles.progressTrack, { backgroundColor: colors.surfaceMuted }]}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: `${progress * 100}%`,
+                backgroundColor: colors.primary,
+              },
+            ]}
+          />
+        </View>
+      )}
+
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#000" />
-          <CustomText variant="h5" style={{ marginTop: 10, color: '#000' }}>Loading book...</CustomText>
+        <View style={[styles.loadingWrap, { backgroundColor: colors.bg }]}>
+          <Skeleton width="80%" height={400} radius={16} />
+          <Text variant="bodySm" muted style={{ marginTop: spacing.lg }}>
+            Preparing your reading…
+          </Text>
+        </View>
+      ) : error ? (
+        <View style={[styles.errorWrap, { padding: spacing.xl }]}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.textSubtle} />
+          <Text variant="h3" weight="semibold" centered style={{ marginTop: spacing.md }}>
+            Couldn't open this book
+          </Text>
+          <Text variant="bodySm" muted centered style={{ marginTop: spacing.xs }}>
+            {error}
+          </Text>
+          <Pressable
+            onPress={() => {
+              setLoading(true);
+              setError(null);
+              loadBook();
+            }}
+            style={[styles.retry, { backgroundColor: colors.primary, borderRadius: radius.pill }]}
+          >
+            <Text variant="bodySm" weight="semibold" color={colors.primaryFg}>
+              Try again
+            </Text>
+          </Pressable>
         </View>
       ) : (
-        <WebView
-          source={{ html: htmlContent }}
-          style={styles.webview}
-          onMessage={onMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          allowFileAccess={true}
-          originWhitelist={['*']}
-          mixedContentMode="always"
-        />
+        <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+          <WebView
+            source={{ html: htmlContent }}
+            style={{ flex: 1, backgroundColor: colors.bg }}
+            onMessage={onMessage}
+            javaScriptEnabled
+            domStorageEnabled
+            originWhitelist={['*']}
+            mixedContentMode="always"
+          />
+        </Animated.View>
       )}
-    </View>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0'
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    gap: 12,
   },
-  backButton: {
-    padding: 5,
-    marginRight: 5
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  titleContainer: {
+  titleWrap: {
     flex: 1,
-    marginHorizontal: 10
   },
-  title: {
-    color: '#000'
-  },
-  pageInfo: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#ddd'
-  },
-  pageText: {
-    color: '#000',
-    fontWeight: '600'
-  },
-  likeButton: {
+  likeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginLeft: 8,
-    gap: 4
+    gap: 6,
+    paddingHorizontal: 10,
+    height: 32,
   },
-  likeButtonActive: {
-    backgroundColor: '#FFE8E8',
-    borderColor: '#FF4444'
+  progressTrack: {
+    height: 2,
+    width: '100%',
   },
-  likeText: {
-    color: '#000',
-    fontWeight: '600'
+  progressFill: {
+    height: 2,
   },
-  likeTextActive: {
-    color: '#FF4444'
-  },
-  webview: {
+  loadingWrap: {
     flex: 1,
-    backgroundColor: '#f0f0f0'
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0'
-  }
+    justifyContent: 'center',
+  },
+  errorWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retry: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
 });
 
 export default BookReader;

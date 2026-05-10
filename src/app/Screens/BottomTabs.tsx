@@ -1,173 +1,225 @@
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, SafeAreaView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { Platform, View, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { GetAllBooks } from '@/components/API/BooksAPI';
 
-// Import correct path for ForYou - adjust if needed
-import ForYou from '../Screens/MainSection/ForYou';
-import Library from '../Screens/MainSection/Library';
-import Profile from '../Screens/MainSection/Profile';
+import ForYou from './MainSection/ForYou';
+import Library from './MainSection/Library';
+import Profile from './MainSection/Profile';
+import { useTheme } from '../../theme/ThemeContext';
+import { Text } from '../../components/ui/Text';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const Tab = createBottomTabNavigator();
 
 const BOOKS_CACHE_KEY = '@cached_books';
 const CACHE_EXPIRY_KEY = '@cache_expiry';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 30 * 60 * 1000;
 
-// Safe area wrapper component with proper typing
-interface SafeAreaWrapperProps {
-  children: ReactNode;
+interface TabIconProps {
+  focused: boolean;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconNameOutline: keyof typeof Ionicons.glyphMap;
+  label: string;
 }
 
-const SafeAreaWrapper = ({ children }: SafeAreaWrapperProps) => {
+const TabIcon: React.FC<TabIconProps> = ({ focused, iconName, iconNameOutline, label }) => {
+  const { colors } = useTheme();
+  const scale = useSharedValue(focused ? 1 : 0.9);
+  const opacity = useSharedValue(focused ? 1 : 0.6);
+
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1.05 : 1, { damping: 14, stiffness: 220 });
+    opacity.value = withTiming(focused ? 1 : 0.6, { duration: 180 });
+  }, [focused, scale, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      {children}
-    </SafeAreaView>
+    <Animated.View style={[styles.tabItem, animatedStyle]}>
+      <View
+        style={[
+          styles.iconWrap,
+          focused && {
+            backgroundColor: colors.primaryMuted,
+          },
+        ]}
+      >
+        <Ionicons
+          name={focused ? iconName : iconNameOutline}
+          size={20}
+          color={focused ? colors.primary : colors.textMuted}
+        />
+      </View>
+      <Text
+        variant="caption"
+        weight={focused ? 'semibold' : 'medium'}
+        color={focused ? colors.primary : colors.textMuted}
+        style={{ marginTop: 2 }}
+      >
+        {label}
+      </Text>
+    </Animated.View>
   );
 };
 
-
-const BottomTabs = ({navigation}:any) => {
+const BottomTabs = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const [allBooks, setAllBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAllBooks = async () => {
-      try {
-        // Try to load cached books first for instant display
-        const cachedBooks = await AsyncStorage.getItem(BOOKS_CACHE_KEY);
-        const cacheExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
+  const fetchAllBooks = useCallback(async () => {
+    try {
+      const cachedBooks = await AsyncStorage.getItem(BOOKS_CACHE_KEY);
+      const cacheExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
 
-        if (cachedBooks) {
-          const parsedBooks = JSON.parse(cachedBooks);
-          setAllBooks(parsedBooks);
-          setIsLoading(false);
+      if (cachedBooks) {
+        const parsedBooks = JSON.parse(cachedBooks);
+        setAllBooks(parsedBooks);
+        setIsLoading(false);
+        if (cacheExpiry && Date.now() < parseInt(cacheExpiry, 10)) return;
+      }
 
-          // Check if cache is still valid
-          if (cacheExpiry && Date.now() < parseInt(cacheExpiry)) {
-            return; // Cache is valid, no need to fetch
-          }
-        }
-
-        // Fetch fresh data from API
-        const newReleasedBooks = await GetAllBooks();
+      const newReleasedBooks = await GetAllBooks();
+      if (Array.isArray(newReleasedBooks)) {
         setAllBooks(newReleasedBooks);
-
-        // Cache the books for next time
         await AsyncStorage.setItem(BOOKS_CACHE_KEY, JSON.stringify(newReleasedBooks));
         await AsyncStorage.setItem(CACHE_EXPIRY_KEY, String(Date.now() + CACHE_DURATION));
-
-      } catch (error) {
-        console.error('Error fetching books:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchAllBooks();
+    } catch (error) {
+      if (__DEV__) console.error('Error fetching books:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchAllBooks();
+  }, [fetchAllBooks]);
 
-  // Show loading screen while fetching books (only on first load without cache)
   if (isLoading && allBooks.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90A4" />
-        <Text style={styles.loadingText}>Loading Books...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
+        <View style={{ width: '85%', gap: 14 }}>
+          <Skeleton width="50%" height={24} />
+          <Skeleton width="80%" height={14} />
+          <View style={{ height: 16 }} />
+          <Skeleton width="100%" height={140} radius={16} />
+          <View style={{ height: 8 }} />
+          <Skeleton width="100%" height={140} radius={16} />
+        </View>
       </View>
     );
   }
 
+  const tabBarHeight = (Platform.OS === 'ios' ? 60 : 60) + insets.bottom;
+
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          // iOS specific shadow properties
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          // Android specific elevation
-          elevation: 5,
-          // Ensure proper padding and height with safe area insets
-          height: Platform.OS === 'ios' ? 90 : 60 + insets.bottom,
+          position: 'absolute',
+          height: tabBarHeight,
           paddingBottom: insets.bottom,
-          borderTopWidth: 1,
-          borderTopColor: '#EEEEEE',
+          paddingTop: 8,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: Platform.OS === 'ios' ? 8 : 5,
-        },
-        tabBarActiveTintColor: 'blue',
-        tabBarInactiveTintColor: '#000',
-        tabBarItemStyle: {
-          paddingTop: Platform.OS === 'ios' ? 10 : 5,
-        },
-      }}
+        tabBarBackground: () => (
+          <BlurView
+            tint={isDark ? 'dark' : 'light'}
+            intensity={Platform.OS === 'ios' ? 60 : 40}
+            style={StyleSheet.absoluteFill}
+          >
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: colors.bgGlass,
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: colors.border,
+                },
+              ]}
+            />
+          </BlurView>
+        ),
+        tabBarButton: (props) => (
+          <Pressable
+            {...(props as any)}
+            android_ripple={{ color: 'transparent' }}
+            onPress={(e) => {
+              Haptics.selectionAsync().catch(() => {});
+              props.onPress?.(e as any);
+            }}
+            style={[styles.tabBarBtn]}
+          >
+            {props.children}
+          </Pressable>
+        ),
+      })}
     >
       <Tab.Screen
         name="forYou"
         options={{
-          title: 'Satguru Panth',
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
-              <MaterialCommunityIcons
-                name="home"
-                size={size}
-                color={color}
-              />
-            </View>
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              iconName="home"
+              iconNameOutline="home-outline"
+              label="Home"
+            />
           ),
         }}
       >
-        {() => <ForYou navigation={navigation} allBooks={allBooks} />}
-
+        {() => <ForYou navigation={navigation} allBooks={allBooks} onRefresh={fetchAllBooks} />}
       </Tab.Screen>
       <Tab.Screen
         name="library"
         options={{
-          title: 'Library',
-          tabBarLabel: 'Library',
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
-              <MaterialCommunityIcons
-                name="bookmark"
-                size={size}
-                color={color}
-              />
-            </View>
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              iconName="library"
+              iconNameOutline="library-outline"
+              label="Library"
+            />
           ),
         }}
       >
-        {() => <Library navigation={navigation} allBooks = {allBooks}/>}
+        {() => <Library navigation={navigation} allBooks={allBooks} />}
       </Tab.Screen>
       <Tab.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ height: 24, width: 24, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons
-                name="person-add-sharp"
-                size={size}
-                color={color}
-              />
-            </View>
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              iconName="person"
+              iconNameOutline="person-outline"
+              label="Profile"
+            />
           ),
         }}
       >
         {() => <Profile navigation={navigation} />}
-
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -178,13 +230,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '500',
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrap: {
+    width: 44,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBarBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
