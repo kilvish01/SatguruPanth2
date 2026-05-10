@@ -12,10 +12,14 @@ expo-env.d.ts
 # Native
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# Android signing secrets (local only — use GitHub Secrets in CI)
+android/keystore.properties
 
 # Metro
 .metro-health-check*

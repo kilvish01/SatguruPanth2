@@ -81,6 +81,12 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -106,9 +112,9 @@ android {
         }
         release {
             storeFile file('satguruapp-release.keystore')
-            storePassword 'satguru@2026'
-            keyAlias 'satguruapp-release'
-            keyPassword 'satguru@2026'
+            storePassword keystoreProperties['KEYSTORE_PASSWORD'] ?: System.getenv('KEYSTORE_PASSWORD') ?: ''
+            keyAlias keystoreProperties['KEY_ALIAS'] ?: System.getenv('KEY_ALIAS') ?: ''
+            keyPassword keystoreProperties['KEY_PASSWORD'] ?: System.getenv('KEY_PASSWORD') ?: ''
         }
     }
     buildTypes {
