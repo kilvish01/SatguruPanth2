@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const TABLE_NAME = process.env.DYNAMO_TABLE || 'BooksMetadata';
 
-exports.saveMetadata = async ({ bookId, title, author, userId, fileKey }) => {
+exports.saveMetadata = async ({ bookId, title, author, userId, fileKey, coverImage }) => {
     try {
         const item = {
             BookID: bookId,
@@ -18,6 +18,11 @@ exports.saveMetadata = async ({ bookId, title, author, userId, fileKey }) => {
             viewCount: 0,
             likeCount: 0
         };
+
+        // Add coverImage if provided
+        if (coverImage) {
+            item.coverImage = coverImage;
+        }
 
         await dynamodb.put({
             TableName: TABLE_NAME,

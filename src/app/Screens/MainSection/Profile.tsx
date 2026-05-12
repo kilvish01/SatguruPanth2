@@ -40,7 +40,8 @@ interface RowProps {
 
 const Profile: React.FC<ProfileProps> = ({ navigation }) => {
   const { colors, spacing, radius, mode, setMode, isDark } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
+  const [deleting, setDeleting] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometryType, setBiometryType] = useState<'fingerprint' | 'face' | 'iris' | 'unknown'>(
@@ -81,6 +82,55 @@ const Profile: React.FC<ProfileProps> = ({ navigation }) => {
         },
       },
     ]);
+  };
+
+  // Two-step confirmation. Step 1 explains the consequence; Step 2 makes the
+  // user type/tap a final confirm so deletion can't happen on a single tap.
+  const handleDeleteAccount = () => {
+    if (deleting) return;
+    Alert.alert(
+      'Delete account',
+      'This will permanently delete your account, your liked books and any in-app preferences from our servers. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you absolutely sure?',
+              'Tap "Delete forever" to permanently remove your account. You will be signed out.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeleting(true);
+                    Haptics.notificationAsync(
+                      Haptics.NotificationFeedbackType.Warning
+                    ).catch(() => {});
+                    try {
+                      await deleteAccount();
+                      navigation.reset({ index: 0, routes: [{ name: 'loginPage' }] });
+                    } catch (err: any) {
+                      Alert.alert(
+                        'Could not delete account',
+                        err?.response?.data?.error ||
+                          err?.message ||
+                          'Please try again in a moment, or contact support.'
+                      );
+                    } finally {
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   const handleShare = async () => {
@@ -191,7 +241,7 @@ const Profile: React.FC<ProfileProps> = ({ navigation }) => {
                 {user?.name || 'Welcome, Seeker'}
               </Text>
               <Text variant="bodySm" color="rgba(255,255,255,0.85)" style={{ marginTop: 2 }}>
-                {user?.phone || 'Sign in to personalize your journey'}
+                {user?.email || 'Sign in to personalize your journey'}
               </Text>
               <Pressable
                 onPress={() => navigation.navigate('editProfile')}
@@ -318,6 +368,27 @@ const Profile: React.FC<ProfileProps> = ({ navigation }) => {
             <Ionicons name="log-out-outline" size={18} color={colors.danger} />
             <Text variant="body" weight="semibold" color={colors.danger}>
               Sign out
+            </Text>
+          </Pressable>
+
+          <Pressable
+            disabled={deleting}
+            onPress={handleDeleteAccount}
+            style={({ pressed }) => [
+              styles.signOut,
+              {
+                marginTop: spacing.md,
+                borderColor: colors.danger,
+                borderWidth: StyleSheet.hairlineWidth,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md,
+                opacity: pressed || deleting ? 0.6 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <Text variant="body" weight="semibold" color={colors.danger}>
+              {deleting ? 'Deleting…' : 'Delete account'}
             </Text>
           </Pressable>
 

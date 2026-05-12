@@ -35,3 +35,23 @@ exports.getSignedUrl = async (s3Key) => {
         throw new Error(`Generate signed URL failed: ${error.message}`);
     }
 };
+
+exports.uploadIcon = async (fileContent, iconFilename) => {
+    try {
+        const buffer = Buffer.from(fileContent);
+        const fileKey = `book-icons/${iconFilename}`;
+
+        await s3.putObject({
+            Bucket: BUCKET_NAME,
+            Key: fileKey,
+            Body: buffer,
+            ContentType: 'image/svg+xml',
+            CacheControl: 'max-age=31536000'
+        }).promise();
+
+        // Return public URL
+        return `https://${BUCKET_NAME}.s3.amazonaws.com/${fileKey}`;
+    } catch (error) {
+        throw new Error(`Icon upload failed: ${error.message}`);
+    }
+};

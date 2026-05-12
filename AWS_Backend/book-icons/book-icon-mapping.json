@@ -1,0 +1,218 @@
+[
+  {
+    "pdfFilename": "Aatmbodh-.pdf",
+    "iconFilename": "आत्मबोध.svg",
+    "hindName": "आत्मबोध",
+    "theme": "om_lotus"
+  },
+  {
+    "pdfFilename": "AatmbodhMala.pdf",
+    "iconFilename": "आत्मबोध माला.svg",
+    "hindName": "आत्मबोध माला",
+    "theme": "mala_beads"
+  },
+  {
+    "pdfFilename": "Adhyatma ka khel.pdf",
+    "iconFilename": "अध्यात्म का खेल.svg",
+    "hindName": "अध्यात्म का खेल",
+    "theme": "yantra"
+  },
+  {
+    "pdfFilename": "Advaita_Bhakti.pdf",
+    "iconFilename": "अद्वैत भक्ति.svg",
+    "hindName": "अद्वैत भक्ति",
+    "theme": "lotus_flame"
+  },
+  {
+    "pdfFilename": "Agayani Jeev.pdf",
+    "iconFilename": "अज्ञानी जीव.svg",
+    "hindName": "अज्ञानी जीव",
+    "theme": "path_light"
+  },
+  {
+    "pdfFilename": "Andar se dhoye daro tou jane.pdf",
+    "iconFilename": "अंदर से धोये.svg",
+    "hindName": "अंदर से धोये",
+    "theme": "water_purify"
+  },
+  {
+    "pdfFilename": "Aproksh Bhakti.pdf",
+    "iconFilename": "अप्रोक्ष भक्ति.svg",
+    "hindName": "अप्रोक्ष भक्ति",
+    "theme": "divine_hands"
+  },
+  {
+    "pdfFilename": "Dhar_Kaise.pdf",
+    "iconFilename": "धार कैसे.svg",
+    "hindName": "धार कैसे",
+    "theme": "river_flow"
+  },
+  {
+    "pdfFilename": "Fakir.pdf",
+    "iconFilename": "फकीर.svg",
+    "hindName": "फकीर",
+    "theme": "sage_meditation"
+  },
+  {
+    "pdfFilename": "GeetaSaar.pdf",
+    "iconFilename": "गीता सार.svg",
+    "hindName": "गीता सार",
+    "theme": "krishna_flute"
+  },
+  {
+    "pdfFilename": "Jeev ka Dharm Yudh.pdf",
+    "iconFilename": "जीव का धर्म युद्ध.svg",
+    "hindName": "जीव का धर्म युद्ध",
+    "theme": "warrior_path"
+  },
+  {
+    "pdfFilename": "Kalyug_Ka_Nilkalank.pdf",
+    "iconFilename": "कलयुग का नीलकलंक.svg",
+    "hindName": "कलयुग का नीलकलंक",
+    "theme": "kalki_avatar"
+  },
+  {
+    "pdfFilename": "Maan ki dhara palto.pdf",
+    "iconFilename": "मन की धारा पलटो.svg",
+    "hindName": "मन की धारा पलटो",
+    "theme": "mind_waves"
+  },
+  {
+    "pdfFilename": "Mool gyaan hi saar.pdf",
+    "iconFilename": "मूल ज्ञान ही सार.svg",
+    "hindName": "मूल ज्ञान ही सार",
+    "theme": "tree_roots"
+  },
+  {
+    "pdfFilename": "Mukti_Path.pdf",
+    "iconFilename": "मुक्ति पथ.svg",
+    "hindName": "मुक्ति पथ",
+    "theme": "liberation_gate"
+  },
+  {
+    "pdfFilename": "Naam daan ka saar.pdf",
+    "iconFilename": "नाम दान का सार.svg",
+    "hindName": "नाम दान का सार",
+    "theme": "divine_name"
+  },
+  {
+    "pdfFilename": "Naamdaan ki tayiyari.pdf",
+    "iconFilename": "नामदान की तैयारी.svg",
+    "hindName": "नामदान की तैयारी",
+    "theme": "preparation_altar"
+  },
+  {
+    "pdfFilename": "ParamVarhi.pdf",
+    "iconFilename": "परम वारही.svg",
+    "hindName": "परम वारही",
+    "theme": "supreme_goddess"
+  },
+  {
+    "pdfFilename": "Paramgyaan.pdf",
+    "iconFilename": "परम ज्ञान.svg",
+    "hindName": "परम ज्ञान",
+    "theme": "supreme_knowledge"
+  },
+  {
+    "pdfFilename": "Prathna.pdf",
+    "iconFilename": "प्रार्थना.svg",
+    "hindName": "प्रार्थना",
+    "theme": "prayer_hands"
+  },
+  {
+    "pdfFilename": "Ram_Kripa.pdf",
+    "iconFilename": "राम कृपा.svg",
+    "hindName": "राम कृपा",
+    "theme": "ram_blessings"
+  },
+  {
+    "pdfFilename": "Saar Ka Saar.pdf",
+    "iconFilename": "सार का सार.svg",
+    "hindName": "सार का सार",
+    "theme": "essence_drop"
+  },
+  {
+    "pdfFilename": "Saar Vani.pdf",
+    "iconFilename": "सार वाणी.svg",
+    "hindName": "सार वाणी",
+    "theme": "divine_speech"
+  },
+  {
+    "pdfFilename": "Sahaj Path.pdf",
+    "iconFilename": "सहज पथ.svg",
+    "hindName": "सहज पथ",
+    "theme": "simple_path"
+  },
+  {
+    "pdfFilename": "Satguru Panth.pdf",
+    "iconFilename": "सतगुरु पंथ.svg",
+    "hindName": "सतगुरु पंथ",
+    "theme": "guru_feet"
+  },
+  {
+    "pdfFilename": "Satguru_Panth_Ki_Khoj.pdf",
+    "iconFilename": "सतगुरु पंथ की खोज.svg",
+    "hindName": "सतगुरु पंथ की खोज",
+    "theme": "spiritual_search"
+  },
+  {
+    "pdfFilename": "SathSang Mala.pdf",
+    "iconFilename": "सत्संग माला.svg",
+    "hindName": "सत्संग माला",
+    "theme": "satsang_circle"
+  },
+  {
+    "pdfFilename": "Satnam.pdf",
+    "iconFilename": "सतनाम.svg",
+    "hindName": "सतनाम",
+    "theme": "true_name"
+  },
+  {
+    "pdfFilename": "Satya Path.pdf",
+    "iconFilename": "सत्य पथ.svg",
+    "hindName": "सत्य पथ",
+    "theme": "truth_path"
+  },
+  {
+    "pdfFilename": "Satya_Khoj.pdf",
+    "iconFilename": "सत्य खोज.svg",
+    "hindName": "सत्य खोज",
+    "theme": "truth_search"
+  },
+  {
+    "pdfFilename": "adhyatmikPatori.pdf",
+    "iconFilename": "आध्यात्मिक पाठशाला.svg",
+    "hindName": "आध्यात्मिक पाठशाला",
+    "theme": "spiritual_school"
+  },
+  {
+    "pdfFilename": "kalki Avtaran.pdf",
+    "iconFilename": "कल्कि अवतरण.svg",
+    "hindName": "कल्कि अवतरण",
+    "theme": "avatar_descent"
+  },
+  {
+    "pdfFilename": "poorn Adhyatmik Safar.pdf",
+    "iconFilename": "पूर्ण आध्यात्मिक सफर.svg",
+    "hindName": "पूर्ण आध्यात्मिक सफर",
+    "theme": "complete_journey"
+  },
+  {
+    "pdfFilename": "sadguru mahima.pdf",
+    "iconFilename": "सद्गुरु महिमा.svg",
+    "hindName": "सद्गुरु महिमा",
+    "theme": "guru_glory"
+  },
+  {
+    "pdfFilename": "satguruKiChetavni.pdf",
+    "iconFilename": "सतगुरु की चेतावनी.svg",
+    "hindName": "सतगुरु की चेतावनी",
+    "theme": "divine_warning"
+  },
+  {
+    "pdfFilename": "satgyankojane.pdf",
+    "iconFilename": "सत्य ज्ञान को जाने.svg",
+    "hindName": "सत्य ज्ञान को जाने",
+    "theme": "know_truth"
+  }
+]

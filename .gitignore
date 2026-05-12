@@ -41,3 +41,12 @@ yarn-error.*
 
 app-example
 AWS_Backend/.env
+
+# Build artifacts in repo root (sideloadable APKs, signed AABs, lambda zips)
+/*.apk
+/*.aab
+AWS_Backend/*.zip
+AWS_Backend/functions/*.zip
+
+# stray editor/AI logs occasionally dropped here
+**/## GitHub Copilot Chat.md

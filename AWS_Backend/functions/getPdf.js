@@ -25,26 +25,31 @@ exports.handler = async (event) => {
             };
         }
 
-        // Get PDF from S3
+        // Generate a signed URL for the PDF
         let s3Key = result.Item.s3Key;
         if (s3Key.startsWith('s3://')) {
             s3Key = s3Key.replace(/^s3:\/\/[^\/]+\//, '');
         }
 
-        const pdfData = await s3.getObject({
+        // Generate a pre-signed URL that expires in 1 hour
+        const signedUrl = s3.getSignedUrl('getObject', {
             Bucket: result.Item.s3Bucket,
-            Key: s3Key
-        }).promise();
+            Key: s3Key,
+            Expires: 3600 // 1 hour
+        });
 
         return {
             statusCode: 200,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': 'inline'
+                'Content-Type': 'application/json'
             },
-            body: pdfData.Body.toString('base64'),
-            isBase64Encoded: true
+            body: JSON.stringify({
+                pdfUrl: signedUrl,
+                bookId: bookId,
+                title: result.Item.title,
+                expiresIn: 3600
+            })
         };
     } catch (error) {
         return {

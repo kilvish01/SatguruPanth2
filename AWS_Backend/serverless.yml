@@ -1,18 +1,49 @@
 service: book-reader-backend
 
+useDotenv: true
+
+package:
+  patterns:
+    - '!.git/**'
+    - '!.serverless/**'
+    - '!**/*.md'
+    - '!**/*.zip'
+    - '!downloaded_books/**'
+    - '!book-icons/**'
+    - '!**/test/**'
+    - '!**/tests/**'
+    - '!**/*.test.js'
+    - '!node_modules/serverless/**'
+    - '!node_modules/@serverless/**'
+    - '!node_modules/serverless-offline/**'
+    - '!node_modules/nodemon/**'
+    - '!node_modules/@aws-sdk/**'
+    - '!node_modules/@smithy/**'
+    - '!node_modules/@esbuild/**'
+    - '!node_modules/java-invoke-local/**'
+    - '!node_modules/@types/**'
+
 provider:
   name: aws
   runtime: nodejs18.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
+  apiGateway:
+    binaryMediaTypes:
+      - 'application/pdf'
   environment:
     S3_BUCKET: book-reader-pdfs
     DYNAMO_TABLE: BooksMetadata
+    JWT_SECRET: ${env:JWT_SECRET}
+    GOOGLE_WEB_CLIENT_ID: ${env:GOOGLE_WEB_CLIENT_ID}
+    GOOGLE_ANDROID_CLIENT_ID: ${env:GOOGLE_ANDROID_CLIENT_ID, ''}
+    GOOGLE_IOS_CLIENT_ID: ${env:GOOGLE_IOS_CLIENT_ID, ''}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - s3:GetObject
         - s3:PutObject
+        - s3:PutObjectAcl
       Resource: "arn:aws:s3:::book-reader-pdfs/*"
     - Effect: Allow
       Action:
@@ -21,9 +52,23 @@ provider:
         - dynamodb:GetItem
         - dynamodb:PutItem
         - dynamodb:UpdateItem
-      Resource: "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata"
+        - dynamodb:DeleteItem
+      Resource:
+        - "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata"
+        - "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata/index/*"
+
+custom:
+  jwtAuthorizer:
+    name: jwtAuthorizer
+    type: TOKEN
+    identitySource: method.request.header.Authorization
 
 functions:
+  # --- Custom Lambda authorizer (validates our HS256 JWTs) ---
+  jwtAuthorizer:
+    handler: functions/auth/authorizer.handler
+
+  # --- Public book endpoints (no auth required) ---
   getAllBooks:
     handler: functions/getAllBooks.handler
     events:
@@ -38,22 +83,6 @@ functions:
       - http:
           path: /api/books/{bookId}
           method: get
-          cors: true
-
-  uploadBook:
-    handler: functions/uploadBook.handler
-    events:
-      - http:
-          path: /api/books/upload
-          method: post
-          cors: true
-
-  likeBook:
-    handler: functions/likeBook.handler
-    events:
-      - http:
-          path: /api/books/{bookId}/like
-          method: post
           cors: true
 
   getMostViewed:
@@ -79,3 +108,57 @@ functions:
           path: /api/books/{bookId}/pdf
           method: get
           cors: true
+
+  uploadBook:
+    handler: functions/uploadBook.handler
+    events:
+      - http:
+          path: /api/books/upload
+          method: post
+          cors: true
+
+  # --- Auth endpoint (public — exchanges Google ID token for our JWT) ---
+  googleAuth:
+    handler: functions/auth/google.handler
+    events:
+      - http:
+          path: /api/auth/google
+          method: post
+          cors: true
+
+  # --- Authenticated endpoints (validated by jwtAuthorizer) ---
+  me:
+    handler: functions/auth/me.handler
+    events:
+      - http:
+          path: /api/me
+          method: get
+          cors: true
+          authorizer: ${self:custom.jwtAuthorizer}
+
+  deleteAccount:
+    handler: functions/auth/deleteAccount.handler
+    events:
+      - http:
+          path: /api/me
+          method: delete
+          cors: true
+          authorizer: ${self:custom.jwtAuthorizer}
+
+  myLikedBooks:
+    handler: functions/auth/myLikedBooks.handler
+    events:
+      - http:
+          path: /api/me/liked-books
+          method: get
+          cors: true
+          authorizer: ${self:custom.jwtAuthorizer}
+
+  likeBook:
+    handler: functions/likeBook.handler
+    events:
+      - http:
+          path: /api/books/{bookId}/like
+          method: post
+          cors: true
+          authorizer: ${self:custom.jwtAuthorizer}

@@ -24,8 +24,6 @@ import { Skeleton } from '../../components/ui/Skeleton';
 const Tab = createBottomTabNavigator();
 
 const BOOKS_CACHE_KEY = '@cached_books';
-const CACHE_EXPIRY_KEY = '@cache_expiry';
-const CACHE_DURATION = 30 * 60 * 1000;
 
 interface TabIconProps {
   focused: boolean;
@@ -88,20 +86,15 @@ const BottomTabs = ({ navigation }: any) => {
   const fetchAllBooks = useCallback(async () => {
     try {
       const cachedBooks = await AsyncStorage.getItem(BOOKS_CACHE_KEY);
-      const cacheExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
-
       if (cachedBooks) {
-        const parsedBooks = JSON.parse(cachedBooks);
-        setAllBooks(parsedBooks);
+        setAllBooks(JSON.parse(cachedBooks));
         setIsLoading(false);
-        if (cacheExpiry && Date.now() < parseInt(cacheExpiry, 10)) return;
       }
 
       const newReleasedBooks = await GetAllBooks();
       if (Array.isArray(newReleasedBooks)) {
         setAllBooks(newReleasedBooks);
         await AsyncStorage.setItem(BOOKS_CACHE_KEY, JSON.stringify(newReleasedBooks));
-        await AsyncStorage.setItem(CACHE_EXPIRY_KEY, String(Date.now() + CACHE_DURATION));
       }
     } catch (error) {
       if (__DEV__) console.error('Error fetching books:', error);
@@ -206,7 +199,7 @@ const BottomTabs = ({ navigation }: any) => {
           ),
         }}
       >
-        {() => <Library navigation={navigation} allBooks={allBooks} />}
+        {() => <Library navigation={navigation} allBooks={allBooks} onRefresh={fetchAllBooks} />}
       </Tab.Screen>
       <Tab.Screen
         name="profile"

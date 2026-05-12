@@ -21,6 +21,7 @@ import { Screen } from '../../../components/ui/Screen';
 interface LibraryProps {
   navigation: any;
   allBooks: any[];
+  onRefresh?: () => Promise<void>;
 }
 
 interface Book {
@@ -52,7 +53,7 @@ const GRID_SPACING = 12;
 const SIDE_PADDING = 20;
 const ITEM_WIDTH = (width - SIDE_PADDING * 2 - GRID_SPACING) / COLUMN_COUNT;
 
-const Library: React.FC<LibraryProps> = ({ navigation, allBooks }) => {
+const Library: React.FC<LibraryProps> = ({ navigation, allBooks, onRefresh }) => {
   const { colors, spacing } = useTheme();
   const [currentSort, setCurrentSort] = useState<SortKey>('all');
   const [likedBooks, setLikedBooks] = useState<Set<string>>(new Set());
@@ -134,8 +135,12 @@ const Library: React.FC<LibraryProps> = ({ navigation, allBooks }) => {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    try {
+      await onRefresh?.();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
 
   const renderBook = useCallback(
     ({ item, index }: { item: Book; index: number }) => {

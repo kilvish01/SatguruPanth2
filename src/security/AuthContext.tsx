@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { secureGet, secureSet, secureDelete, SecureKeys } from './secureStorage';
+import { setApiAuthToken } from '../services/apiClient';
+import { authService } from '../services/authService';
 
 export interface UserProfile {
   id: string;
-  phone: string;
+  email: string;
   name?: string;
-  email?: string;
+  picture?: string;
+  // Legacy fields kept for backward compatibility with older UI that read them.
+  phone?: string;
   city?: string;
   pinCode?: string;
   avatar?: string;
@@ -18,6 +23,7 @@ interface AuthContextValue {
   isLoading: boolean;
   signIn: (token: string, profile: UserProfile) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ likesDeleted: number }>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -38,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedToken && storedProfile) {
           setToken(storedToken);
           setUser(JSON.parse(storedProfile));
+          setApiAuthToken(storedToken);
         }
       } catch {
         // ignored: treat as unauthenticated
@@ -55,9 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
     setToken(newToken);
     setUser(profile);
+    setApiAuthToken(newToken);
   }, []);
 
   const signOut = useCallback(async () => {
+    // Best-effort native sign-out so the OS-level Google account chooser
+    // shows up again on the next sign-in.
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // ignored — native SDK may be uninitialized in dev contexts
+    }
     await Promise.all([
       secureDelete(SecureKeys.AUTH_TOKEN),
       secureDelete(SecureKeys.REFRESH_TOKEN),
@@ -65,7 +80,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
     setToken(null);
     setUser(null);
+    setApiAuthToken(null);
   }, []);
+
+  const deleteAccount = useCallback(async () => {
+    if (!token) {
+      throw new Error('Not signed in');
+    }
+    const result = await authService.deleteAccount(token);
+    // Locally clear everything once the server confirms deletion. We don't
+    // want stale credentials lingering if the user re-installs the app.
+    try {
+      await GoogleSignin.revokeAccess();
+    } catch {
+      // ignored
+    }
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // ignored
+    }
+    await Promise.all([
+      secureDelete(SecureKeys.AUTH_TOKEN),
+      secureDelete(SecureKeys.REFRESH_TOKEN),
+      secureDelete(SecureKeys.USER_PROFILE),
+    ]);
+    setToken(null);
+    setUser(null);
+    setApiAuthToken(null);
+    return { likesDeleted: result.likesDeleted };
+  }, [token]);
 
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
@@ -86,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         signIn,
         signOut,
+        deleteAccount,
         updateProfile,
       }}
     >

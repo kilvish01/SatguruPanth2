@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 import { API_CONFIG } from '../config/api.config';
 
 const AWS_API_URL = API_CONFIG.AWS_API_URL;
@@ -6,7 +6,7 @@ const AWS_API_URL = API_CONFIG.AWS_API_URL;
 export const bookAPI = {
   getAllBooks: async () => {
     try {
-      const response = await axios.get(`${AWS_API_URL}/api/books/all`);
+      const response = await apiClient.get('/api/books/all');
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       return Array.isArray(data) ? data : [];
     } catch (error) {
@@ -17,7 +17,7 @@ export const bookAPI = {
 
   getBook: async (id: string) => {
     try {
-      const response = await axios.get(`${AWS_API_URL}/api/books/${id}`, {
+      const response = await apiClient.get(`/api/books/${id}`, {
         transformResponse: [(data) => {
           const parsed = JSON.parse(data);
           if (parsed.pdfUrl) {
@@ -25,7 +25,7 @@ export const bookAPI = {
           }
           parsed.pdfProxyUrl = `${AWS_API_URL}/api/books/${id}/pdf`;
           return parsed;
-        }]
+        }],
       });
       return response.data;
     } catch (error) {
@@ -36,7 +36,7 @@ export const bookAPI = {
 
   getMostViewed: async (limit: number = 10) => {
     try {
-      const response = await axios.get(`${AWS_API_URL}/api/books/popular/viewed?limit=${limit}`);
+      const response = await apiClient.get(`/api/books/popular/viewed?limit=${limit}`);
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       return Array.isArray(data) ? data : [];
     } catch (error) {
@@ -47,7 +47,7 @@ export const bookAPI = {
 
   getMostLiked: async (limit: number = 10) => {
     try {
-      const response = await axios.get(`${AWS_API_URL}/api/books/popular/liked?limit=${limit}`);
+      const response = await apiClient.get(`/api/books/popular/liked?limit=${limit}`);
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       return Array.isArray(data) ? data : [];
     } catch (error) {
@@ -58,7 +58,7 @@ export const bookAPI = {
 
   likeBook: async (bookId: string, action: 'like' | 'unlike' = 'like') => {
     try {
-      const response = await axios.post(`${AWS_API_URL}/api/books/${bookId}/like`, { action });
+      const response = await apiClient.post(`/api/books/${bookId}/like`, { action });
       const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
       return data;
     } catch (error) {
@@ -67,33 +67,26 @@ export const bookAPI = {
     }
   },
 
-  updateProgress: async (userId: string, bookId: string, currentPage: number, totalPages: number) => {
+  getMyLikedBooks: async () => {
     try {
-      // Progress tracking not implemented in AWS Lambda yet
-      return { success: true };
+      const response = await apiClient.get('/api/me/liked-books');
+      const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error('Error fetching liked books:', error);
       throw error;
     }
   },
 
-  getProgress: async (userId: string, bookId: string) => {
-    try {
-      // Progress tracking not implemented in AWS Lambda yet
-      return { currentPage: 0, totalPages: 0 };
-    } catch (error) {
-      console.error('Error fetching progress:', error);
-      throw error;
-    }
+  updateProgress: async (_userId: string, _bookId: string, _currentPage: number, _totalPages: number) => {
+    return { success: true };
   },
 
-  getUserProgress: async (userId: string) => {
-    try {
-      // Progress tracking not implemented in AWS Lambda yet
-      return [];
-    } catch (error) {
-      console.error('Error fetching user progress:', error);
-      throw error;
-    }
-  }
+  getProgress: async (_userId: string, _bookId: string) => {
+    return { currentPage: 0, totalPages: 0 };
+  },
+
+  getUserProgress: async (_userId: string) => {
+    return [];
+  },
 };

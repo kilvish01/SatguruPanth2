@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradspiritual_school" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D84315;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF5722;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="400" height="600" fill="url(#gradspiritual_school)"/>
+
+  <!-- Decorative border -->
+  <rect x="15" y="15" width="370" height="570" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" rx="10"/>
+  <rect x="25" y="25" width="350" height="550" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1" rx="8"/>
+
+  <!-- Spiritual symbol based on theme -->
+  
+            <!-- Default spiritual design -->
+            <circle cx="200" cy="220" r="80" fill="rgba(255,255,255,0.2)"/>
+            <circle cx="200" cy="220" r="60" fill="rgba(255,255,255,0.1)"/>
+            <circle cx="200" cy="220" r="40" fill="rgba(255,255,255,0.15)"/>
+            <circle cx="200" cy="220" r="20" fill="rgba(255,255,255,0.3)"/>
+            <text x="200" y="240" font-family="Arial, sans-serif" font-size="50" font-weight="bold"
+                  fill="rgba(255,255,255,0.8)" text-anchor="middle">✦</text>
+        
+
+  <!-- Book title in Hindi -->
+  <text x="200" y="480" font-family="Arial, sans-serif" font-size="32" font-weight="bold"
+        fill="white" text-anchor="middle" filter="url(#shadow)">आध्यात्मिक पाठशाला</text>
+
+  <!-- Decorative element at bottom -->
+  <circle cx="200" cy="540" r="3" fill="rgba(255,255,255,0.8)"/>
+  <circle cx="185" cy="540" r="2" fill="rgba(255,255,255,0.6)"/>
+  <circle cx="215" cy="540" r="2" fill="rgba(255,255,255,0.6)"/>
+</svg>

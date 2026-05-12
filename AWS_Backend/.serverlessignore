@@ -1,0 +1,11 @@
+# Big things that shouldn't ship to Lambda
+.git
+.gitignore
+*.md
+*.zip
+downloaded_books/
+book-icons/
+**/*.test.js
+node_modules/serverless
+node_modules/.bin
+node_modules/@serverless
