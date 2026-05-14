@@ -38,11 +38,11 @@ const overrides = {
     extra: {
       ...base.extra,
       appVariant: 'phase2dev',
-      // Filled in after `serverless deploy --stage phase2dev` succeeds.
-      // Set the PHASE2DEV_API_URL env var when building to inject it.
+      // Resolved on 2026-05-15 by `serverless deploy --stage phase2dev`.
+      // Override with PHASE2DEV_API_URL env var for transient testing if needed.
       apiUrl:
         process.env.PHASE2DEV_API_URL ||
-        'https://PLACEHOLDER-phase2dev.execute-api.us-east-1.amazonaws.com/phase2dev',
+        'https://j2bef7ci54.execute-api.us-east-1.amazonaws.com/phase2dev',
     },
   },
 };
