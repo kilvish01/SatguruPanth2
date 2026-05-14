@@ -11,6 +11,17 @@
           "simulator": true
         }
       },
+      "phase2dev": {
+        "extends": "development",
+        "channel": "phase2dev",
+        "env": {
+          "APP_VARIANT": "phase2dev"
+        },
+        "android": {
+          "buildType": "apk",
+          "credentialsSource": "remote"
+        }
+      },
       "production": {
         "android": {
           "buildType": "app-bundle",
@@ -28,4 +39,3 @@
       "appVersionSource": "remote"
     }
   }
-  

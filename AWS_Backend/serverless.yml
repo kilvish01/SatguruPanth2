@@ -32,8 +32,12 @@ provider:
     binaryMediaTypes:
       - 'application/pdf'
   environment:
-    S3_BUCKET: book-reader-pdfs
-    DYNAMO_TABLE: BooksMetadata
+    S3_BUCKET: ${self:custom.bucketName.${self:provider.stage}}
+    DYNAMO_TABLE: ${self:custom.tableName.${self:provider.stage}}
+    BOOK_CONTENT_TABLE: ${self:custom.bookContentTable.${self:provider.stage}}
+    READING_PROGRESS_TABLE: ${self:custom.readingProgressTable.${self:provider.stage}}
+    CONTENT_BUCKET: ${self:custom.contentBucket.${self:provider.stage}}
+    STAGE: ${self:provider.stage}
     JWT_SECRET: ${env:JWT_SECRET}
     GOOGLE_WEB_CLIENT_ID: ${env:GOOGLE_WEB_CLIENT_ID}
     GOOGLE_ANDROID_CLIENT_ID: ${env:GOOGLE_ANDROID_CLIENT_ID, ''}
@@ -44,7 +48,12 @@ provider:
         - s3:GetObject
         - s3:PutObject
         - s3:PutObjectAcl
-      Resource: "arn:aws:s3:::book-reader-pdfs/*"
+        - s3:ListBucket
+      Resource:
+        - "arn:aws:s3:::${self:custom.bucketName.${self:provider.stage}}"
+        - "arn:aws:s3:::${self:custom.bucketName.${self:provider.stage}}/*"
+        - "arn:aws:s3:::${self:custom.contentBucket.${self:provider.stage}}"
+        - "arn:aws:s3:::${self:custom.contentBucket.${self:provider.stage}}/*"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -53,11 +62,36 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
+        - dynamodb:BatchWriteItem
+        - dynamodb:BatchGetItem
       Resource:
-        - "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata"
-        - "arn:aws:dynamodb:us-east-1:*:table/BooksMetadata/index/*"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.tableName.${self:provider.stage}}"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.tableName.${self:provider.stage}}/index/*"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.bookContentTable.${self:provider.stage}}"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.bookContentTable.${self:provider.stage}}/index/*"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.readingProgressTable.${self:provider.stage}}"
+        - "arn:aws:dynamodb:us-east-1:*:table/${self:custom.readingProgressTable.${self:provider.stage}}/index/*"
 
 custom:
+  # Stage-aware resource names. The "dev" stage keeps its existing prod names so
+  # an unflagged `serverless deploy` continues to target the live backend without
+  # any change. The "phase2dev" stage uses fully separate parallel resources.
+  tableName:
+    dev: BooksMetadata
+    phase2dev: BooksMetadata-phase2dev
+  bucketName:
+    dev: book-reader-pdfs
+    phase2dev: book-reader-pdfs-phase2dev
+  bookContentTable:
+    dev: BookContent
+    phase2dev: BookContent-phase2dev
+  readingProgressTable:
+    dev: ReadingProgress
+    phase2dev: ReadingProgress-phase2dev
+  contentBucket:
+    dev: book-reader-content
+    phase2dev: book-reader-content-phase2dev
+
   jwtAuthorizer:
     name: jwtAuthorizer
     type: TOKEN
@@ -162,3 +196,122 @@ functions:
           method: post
           cors: true
           authorizer: ${self:custom.jwtAuthorizer}
+
+# ---------------------------------------------------------------------------
+# CloudFormation resources for the phase2dev stage only.
+# The Condition guards every resource so a `serverless deploy` (no --stage flag)
+# or `--stage dev` deploy will NOT attempt to create these — production
+# resources remain unmanaged by CloudFormation and untouched.
+# ---------------------------------------------------------------------------
+resources:
+  Conditions:
+    IsPhase2Dev:
+      Fn::Equals:
+        - ${self:provider.stage}
+        - phase2dev
+
+  Resources:
+    # Mirror of the prod BooksMetadata table (single-table for books + users)
+    BooksMetadataPhase2DevTable:
+      Type: AWS::DynamoDB::Table
+      Condition: IsPhase2Dev
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.tableName.phase2dev}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: BookID
+            AttributeType: S
+        KeySchema:
+          - AttributeName: BookID
+            KeyType: HASH
+
+    # Stores extracted reflowable content metadata per book.
+    # The actual JSON blob lives in S3 (CONTENT_BUCKET); this table holds
+    # the pointer + extraction status + version so we can re-extract safely.
+    BookContentPhase2DevTable:
+      Type: AWS::DynamoDB::Table
+      Condition: IsPhase2Dev
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.bookContentTable.phase2dev}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: bookId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: bookId
+            KeyType: HASH
+
+    # Tracks per-user reading position for "Continue Reading".
+    # Partition: userId, Sort: bookId. GSI on lastReadAt for ordering.
+    ReadingProgressPhase2DevTable:
+      Type: AWS::DynamoDB::Table
+      Condition: IsPhase2Dev
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.readingProgressTable.phase2dev}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: bookId
+            AttributeType: S
+          - AttributeName: lastReadAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: bookId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: userId-lastReadAt-index
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: lastReadAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Parallel copy of the prod PDF bucket. Public-read for PDFs served direct.
+    BooksPhase2DevBucket:
+      Type: AWS::S3::Bucket
+      Condition: IsPhase2Dev
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: ${self:custom.bucketName.phase2dev}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins: ['*']
+              AllowedMethods: [GET, HEAD]
+              AllowedHeaders: ['*']
+              MaxAge: 3600
+
+    # Holds extracted reflowable content JSON + extracted image assets.
+    ContentPhase2DevBucket:
+      Type: AWS::S3::Bucket
+      Condition: IsPhase2Dev
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: ${self:custom.contentBucket.phase2dev}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins: ['*']
+              AllowedMethods: [GET, HEAD]
+              AllowedHeaders: ['*']
+              MaxAge: 3600
+
+  Outputs:
+    Phase2DevApiUrl:
+      Condition: IsPhase2Dev
+      Description: Base URL for the phase2dev API Gateway
+      Value:
+        Fn::Join:
+          - ''
+          - - 'https://'
+            - Ref: ApiGatewayRestApi
+            - '.execute-api.'
+            - ${self:provider.region}
+            - '.amazonaws.com/'
+            - ${self:provider.stage}

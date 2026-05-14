@@ -1,10 +1,18 @@
 // AWS API Configuration
-// Replace this with your actual AWS API Gateway URL after deployment
-// You can find it by running: cd AWS_Backend && serverless info
-// Or in AWS Console: API Gateway -> Your API -> Stages -> dev
+//
+// The API URL is now driven by the active app variant (production vs
+// phase2dev) via src/config/env.ts. Variants are selected at build time
+// through app.config.js + the APP_VARIANT env var. See eas.json for the
+// build profiles.
+//
+// To run against phase2dev locally:
+//   APP_VARIANT=phase2dev PHASE2DEV_API_URL=https://<id>.execute-api...
+//   npx expo start --clear
+
+import { env } from './env';
 
 export const API_CONFIG = {
-  AWS_API_URL: 'https://k14jep2w9e.execute-api.us-east-1.amazonaws.com/dev',
+  AWS_API_URL: env.apiUrl,
   TIMEOUT: 10000,
-  RETRY_ATTEMPTS: 3
+  RETRY_ATTEMPTS: 3,
 };
