@@ -285,7 +285,10 @@ async function main() {
     process.exit(3);
   }
 
-  // Write content.json locally for inspection
+  // Write content.json locally for inspection. Ensure the cache dir exists
+  // even if every page extraction failed (so we still emit a debuggable file
+  // showing the failure rather than crashing with ENOENT).
+  fs.mkdirSync(cacheDir(bookId), { recursive: true });
   const localOut = path.join(cacheDir(bookId), 'content.json');
   fs.writeFileSync(localOut, JSON.stringify(content, null, 2));
   console.log(`[extract] Wrote ${localOut}`);
