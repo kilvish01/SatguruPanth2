@@ -22,6 +22,7 @@ import { SearchBar } from '../../../components/ui/SearchBar';
 import { BookCard } from '../../../components/ui/BookCard';
 import { Screen } from '../../../components/ui/Screen';
 import { SkeletonRow } from '../../../components/ui/Skeleton';
+import ContinueReadingRail from '../../../components/shared/ContinueReadingRail';
 
 interface ForYouProps {
   navigation: any;
@@ -246,6 +247,8 @@ const ForYou: React.FC<ForYouProps> = ({ navigation, allBooks, onRefresh }) => {
         {filteredBooks.length > 0 && debouncedQuery && (
           <Section title={`Results for "${debouncedQuery}"`} data={filteredBooks} delay={0} />
         )}
+
+        {!debouncedQuery && <ContinueReadingRail />}
 
         {!debouncedQuery && featuredBook && (
           <Animated.View
