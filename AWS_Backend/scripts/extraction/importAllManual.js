@@ -59,6 +59,9 @@ const MAPPING = [
   ['bc9fc490-c5e1-4607-a245-d4783e9f7169',    'satya-khojo.txt'],
   ['74031926-2fd4-40de-a73b-c73951252017',    'satya-narayan-ki-katha.txt'],
   ['a8553efc-d1c1-409f-9941-d8d1de7ed520',    'virat-bano.txt'],
+  ['e0e8cb47-e5a6-4dbf-8615-5f141efe8260',    'keval-nyara-hona-hai.txt'],
+  ['08fba010-7e16-4617-9470-f87a3b9a45f2',    'humko-chahiye.txt'],
+  ['a80e6b77-6d45-4b34-ba0a-c3b5a3074290',    'satguru-panth-21-prashn.txt'],
 ];
 
 function parseArgs(argv) {
