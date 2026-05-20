@@ -1,0 +1,10 @@
+Phase 2 Internal Testing build.
+
+• New: native reflowable Hindi reader — pinch-to-resize text, auto pagination, smooth chapter navigation
+• New: Continue Reading — picks up exactly where you left off, per book
+• Library expanded with 3 new Suresha Dayal texts:
+   – केवल न्यारा होना है
+   – हमको चाहिये
+   – सतगुरु-पंथ के 21 प्रश्न व उनके उत्तर
+
+Feedback welcome — your reports help shape the public release.

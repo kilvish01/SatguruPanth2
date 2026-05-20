@@ -22,7 +22,11 @@ const overrides = {
     extra: {
       ...base.extra,
       appVariant: 'production',
-      apiUrl: 'https://k14jep2w9e.execute-api.us-east-1.amazonaws.com/dev',
+      // INTERNAL-TESTING-ONLY: temporarily pointed at phase2dev backend
+      // for v1.0.2 internal track so testers see the Phase 2 reflowable
+      // reader + new books. REVERT to 'https://k14jep2w9e.execute-api.us-east-1.amazonaws.com/dev'
+      // before any rollout from internal -> closed/open/production tracks.
+      apiUrl: 'https://j2bef7ci54.execute-api.us-east-1.amazonaws.com/phase2dev',
     },
   },
   phase2dev: {
